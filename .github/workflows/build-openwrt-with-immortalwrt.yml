@@ -13,10 +13,11 @@ on:
       openwrt_board:
         description: "Select device board"
         required: false
-        default: "all"
+        default: "s905x3_s905l3a"
         type: choice
         options:
           - all
+          - s905x3_s905l3a
           - s922x_s905x3_s905d_s912_s905l3a
           - r66s_r68s_h66k_h68k_e25_nanopi-r5s
           - eaidk-610_king3399_tn3399_kylin3399
