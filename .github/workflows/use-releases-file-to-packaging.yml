@@ -27,8 +27,8 @@ on:
           - all
           - s922x_s905x3_s905d_s912_s905l3a
           - r66s_r68s_h66k_h68k_e25_nanopi-r5s
-          - eaidk-610_king3399_tn3399_kylin3399
-          - vplus_tqc-a01_tanix-tx6
+          - eaidk-610_king3399_tn3399_kylin3399_hugsun-zm
+          - vplus_tanix-tx6
           - a311d
           - s922x
           - s922x-reva
@@ -87,11 +87,11 @@ on:
       kernel_repo:
         description: "Set the kernel repository"
         required: false
-        default: "https://github.com/ophub/kernel/tree/main/pub"
-      openwrt_size:
-        description: "Set the rootfs size(Unit: MiB)"
-        required: false
-        default: "1024"
+        default: "ophub/kernel"
+        type: choice
+        options:
+          - ophub/kernel
+          - breakings/OpenWrt
 
 env:
   TZ: America/New_York
@@ -145,7 +145,7 @@ jobs:
 
           echo "status=success" >> ${GITHUB_OUTPUT}
 
-      - name: Build OpenWrt firmware [ ${{ env.OPENWRT_RELEASE }} ]
+      - name: Build OpenWrt firmware [ ${{ ${{ inputs.source_branch }} }} ]
         if: ${{ steps.down.outputs.status }} == 'success' && !cancelled()
         uses: ophub/amlogic-s9xxx-openwrt@main
         with:
@@ -154,7 +154,6 @@ jobs:
           openwrt_kernel: ${{ inputs.openwrt_kernel }}
           auto_kernel: ${{ inputs.auto_kernel }}
           kernel_repo: ${{ inputs.kernel_repo }}
-          openwrt_size: ${{ inputs.openwrt_size }}
           gh_token: ${{ secrets.GH_TOKEN }}
 
       - name: Upload OpenWrt Firmware to Release
