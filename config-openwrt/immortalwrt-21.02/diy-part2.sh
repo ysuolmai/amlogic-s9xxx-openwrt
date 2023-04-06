@@ -33,6 +33,9 @@ svn co https://github.com/linkease/istore-ui/trunk/app-store-ui package/app-stor
 svn co https://github.com/linkease/istore/trunk/luci package/istore
 
 
+git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff
+
+
 # Apply patch
 # git apply ../config-openwrt/patches/{0001*,0002*}.patch --directory=feeds/luci
 #
