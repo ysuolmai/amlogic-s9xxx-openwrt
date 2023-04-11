@@ -82,7 +82,9 @@ script_repo="https://github.com/ophub/luci-app-amlogic/tree/main/luci-app-amlogi
 script_repo="${script_repo//tree\/main/trunk}"
 
 # Set the kernel download repository from github.com
-kernel_repo="ophub/kernel"
+kernel_repo="https://github.com/ophub/kernel"
+# Set the tags suffix of the stable kernel, such as kernel_stable, etc.
+kernel_usage="stable"
 # Set the list of kernels used by default
 stable_kernel=("6.1.1" "5.15.1")
 rk3588_kernel=("5.10.1")
@@ -129,7 +131,7 @@ init_var() {
     echo -e "${STEPS} Start Initializing Variables..."
 
     # If it is followed by [ : ], it means that the option requires a parameter value
-    get_all_ver="$(getopt "b:k:a:r:s:g:" "${@}")"
+    get_all_ver="$(getopt "b:r:u:k:a:s:g:" "${@}")"
 
     while [[ -n "${1}" ]]; do
         case "${1}" in
@@ -139,6 +141,22 @@ init_var() {
                 shift
             else
                 error_msg "Invalid -b parameter [ ${2} ]!"
+            fi
+            ;;
+        -r | --kernelRepository)
+            if [[ -n "${2}" ]]; then
+                kernel_repo="${2}"
+                shift
+            else
+                error_msg "Invalid -r parameter [ ${2} ]!"
+            fi
+            ;;
+        -u | --kernelUsage)
+            if [[ -n "${2}" ]]; then
+                kernel_usage="${2//kernel_/}"
+                shift
+            else
+                error_msg "Invalid -u parameter [ ${2} ]!"
             fi
             ;;
         -k | --Kernel)
@@ -158,14 +176,6 @@ init_var() {
                 shift
             else
                 error_msg "Invalid -a parameter [ ${2} ]!"
-            fi
-            ;;
-        -r | --kernelRepository)
-            if [[ -n "${2}" ]]; then
-                kernel_repo="${2}"
-                shift
-            else
-                error_msg "Invalid -r parameter [ ${2} ]!"
             fi
             ;;
         -s | --Size)
@@ -196,12 +206,12 @@ init_var() {
     # 9.KERNEL_TAGS  10.PLATFORM  11.FAMILY  12.BOOT_CONF  13.BOARD  14.BUILD
     [[ -f "${model_conf}" ]] || error_msg "Missing model config file: [ ${model_conf} ]"
 
-    # Convert ${model_conf} to ${model_txt} for [ openwrt-install-amlogic ]
+    # Convert ${model_conf} to ${model_txt} for [ openwrt-install-amlogic ], Just the first 8 columns.
     {
         cat ${model_conf} |
             sed -e 's/NULL/NA/g' -e 's/[ ][ ]*//g' |
             grep -E "^[^#ar].*" |
-            awk -F':' '{if ($6 != "NA") $6 = "/lib/u-boot/"$6; if ($7 != "NA") $7 = "/lib/u-boot/"$7; print}' OFS=':'
+            awk -F':' '{if ($6 != "NA") $6 = "/lib/u-boot/"$6; if ($7 != "NA") $7 = "/lib/u-boot/"$7; NF = 8; print}' OFS=':'
     } >${model_txt}
 
     # Get a list of build devices
@@ -312,20 +322,21 @@ download_depends() {
 }
 
 query_version() {
-    echo -e "${STEPS} Start querying the latest kernel version for [ $(echo ${tags_list[*]} | xargs) ]..."
+    echo -e "${STEPS} Start querying the latest kernel version..."
 
     # Check the version on the kernel repository
     x="1"
     for k in ${tags_list[*]}; do
         {
             # Select the corresponding kernel directory and list
-            kd="${k}"
             if [[ "${k}" == "rk3588" ]]; then
+                kd="${k}"
                 down_kernel_list=(${rk3588_kernel[*]})
             elif [[ "${k}" == "specify" ]]; then
-                kd="stable"
+                kd="${kernel_usage}"
                 down_kernel_list=(${specify_kernel[*]})
             else
+                kd="${kernel_usage}"
                 down_kernel_list=(${stable_kernel[*]})
             fi
 
@@ -333,7 +344,7 @@ query_version() {
             tmp_arr_kernels=()
             i=1
             for kernel_var in ${down_kernel_list[*]}; do
-                echo -e "${INFO} (${x}.${i}) Auto query the latest kernel version of the same series for [ ${k} - ${kernel_var} ]"
+                echo -e "${INFO} (${x}.${i}) Auto query the latest kernel version for [ ${kd} - ${kernel_var} ]"
 
                 # Identify the kernel <VERSION> and <PATCHLEVEL>, such as [ 6.1 ]
                 kernel_verpatch="$(echo ${kernel_var} | awk -F '.' '{print $1"."$2}')"
@@ -367,7 +378,7 @@ query_version() {
                     tmp_arr_kernels[${i}]="${kernel_var}"
                 fi
 
-                echo -e "${INFO} (${x}.${i}) [ ${k} - ${tmp_arr_kernels[$i]} ] is latest kernel (${query_api}). \n"
+                echo -e "${INFO} (${x}.${i}) [ ${kd} - ${tmp_arr_kernels[$i]} ] is latest kernel (${query_api}). \n"
 
                 let i++
             done
@@ -407,19 +418,20 @@ check_kernel() {
 
 download_kernel() {
     cd ${current_path}
-    echo -e "${STEPS} Start downloading the kernel files for [ $(echo ${tags_list[*]} | xargs) ]..."
+    echo -e "${STEPS} Start downloading the kernel files..."
 
     x="1"
     for k in ${tags_list[*]}; do
         {
             # Set the kernel download list
-            kd="${k}"
             if [[ "${k}" == "rk3588" ]]; then
+                kd="${k}"
                 down_kernel_list=(${rk3588_kernel[*]})
             elif [[ "${k}" == "specify" ]]; then
+                kd="${kernel_usage}"
                 down_kernel_list=(${specify_kernel[*]})
-                kd="stable"
             else
+                kd="${kernel_usage}"
                 down_kernel_list=(${stable_kernel[*]})
             fi
 
@@ -428,7 +440,7 @@ download_kernel() {
             for kernel_var in ${down_kernel_list[*]}; do
                 if [[ ! -d "${kernel_path}/${kd}/${kernel_var}" ]]; then
                     kernel_down_from="https://github.com/${kernel_repo}/releases/download/kernel_${kd}/${kernel_var}.tar.gz"
-                    echo -e "${INFO} (${x}.${i}) [ ${k} - ${kernel_var} ] Kernel download from [ ${kernel_down_from} ]"
+                    echo -e "${INFO} (${x}.${i}) [ ${kd} - ${kernel_var} ] Kernel download from [ ${kernel_down_from} ]"
 
                     mkdir -p ${kernel_path}/${kd}
                     wget "${kernel_down_from}" -q -P "${kernel_path}/${kd}"
@@ -437,7 +449,7 @@ download_kernel() {
                     tar -xf "${kernel_path}/${kd}/${kernel_var}.tar.gz" -C "${kernel_path}/${kd}"
                     [[ "${?}" -ne "0" ]] && error_msg "[ ${kernel_var} ] kernel decompression failed."
                 else
-                    echo -e "${INFO} (${x}.${i}) [ ${k} - ${kernel_var} ] Kernel is in the local directory."
+                    echo -e "${INFO} (${x}.${i}) [ ${kd} - ${kernel_var} ] Kernel is in the local directory."
                 fi
 
                 # If the kernel contains the sha256sums file, check the files integrity
@@ -961,13 +973,14 @@ loop_make() {
             confirm_version
 
             # Determine kernel branch
-            kd="${KERNEL_TAGS}"
             if [[ "${KERNEL_TAGS}" == "rk3588" ]]; then
+                kd="${KERNEL_TAGS}"
                 kernel_list=(${rk3588_kernel[*]})
             elif [[ "${KERNEL_TAGS}" =~ ^[0-9]{1,2}\.[0-9]+ ]]; then
+                kd="${kernel_usage}"
                 kernel_list=(${specify_kernel[*]})
-                kd="stable"
             else
+                kd="${kernel_usage}"
                 kernel_list=(${stable_kernel[*]})
             fi
 
@@ -1040,6 +1053,7 @@ download_kernel
 
 # Show make settings
 echo -e "${INFO} [ ${#make_openwrt[*]} ] lists of OpenWrt board: [ $(echo ${make_openwrt[*]} | xargs) ]"
+echo -e "${INFO} Kernel Repo: [ ${kernel_repo} ], Kernel Usage: [ ${kernel_usage} ] \n"
 # Show server start information
 echo -e "${INFO} Server space usage before starting to compile: \n$(df -hT ${current_path}) \n"
 
