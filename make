@@ -23,9 +23,11 @@
 #
 # error_msg          : Output error message
 # process_msg        : Output process message
+# mount_again        : Mount the image file, fail again
 # get_textoffset     : Get kernel TEXT_OFFSET
 #
 # init_var           : Initialize all variables
+# check_data         : Check the validity of the data
 # find_openwrt       : Find OpenWrt file (openwrt-armvirt/*rootfs.tar.gz)
 # download_depends   : Download the dependency files
 # query_version      : Query the latest kernel version
@@ -120,6 +122,37 @@ process_msg() {
     echo -e " [\033[1;92m ${board} - ${kernel} \033[0m] ${1}"
 }
 
+mount_again() {
+    # Check mount parameters
+    m_type="${1}"
+    m_dev="${2}"
+    m_target="${3}"
+    [[ -n "${m_type}" && -n "${m_dev}" && -n "${m_target}" ]] || {
+        error_msg "Mount parameter is missing: [ ${m_type}, ${m_dev}, ${m_target} ]"
+    }
+
+    i="1"
+    max_try="10"
+    while [[ "${i}" -le "${max_try}" ]]; do
+        # Mount according to the image partition format
+        if [[ "${m_type}" == "btrfs" ]]; then
+            mount -t ${m_type} -o discard,compress=zstd:6 ${m_dev} ${m_target}
+        else
+            mount -t ${m_type} -o discard ${m_dev} ${m_target}
+        fi
+
+        # Mount failed and continue trying
+        if [[ "${?}" -eq "0" ]]; then
+            break
+        else
+            sync && sleep 3
+            umount -f ${m_target} 2>/dev/null
+            i="$((i + 1))"
+        fi
+    done
+    [[ "${i}" -gt "${max_try}" ]] && error_msg "[ ${i} ] attempts to mount failed."
+}
+
 get_textoffset() {
     vmlinuz_name="${1}"
     need_overload="yes"
@@ -200,19 +233,20 @@ init_var() {
         esac
         shift
     done
+}
 
+check_data() {
     # Columns of ${model_conf}:
     # 1.ID  2.MODEL  3.SOC  4.FDTFILE  5.UBOOT_OVERLOAD  6.MAINLINE_UBOOT  7.BOOTLOADER_IMG  8.DESCRIPTION
     # 9.KERNEL_TAGS  10.PLATFORM  11.FAMILY  12.BOOT_CONF  13.BOARD  14.BUILD
     [[ -f "${model_conf}" ]] || error_msg "Missing model config file: [ ${model_conf} ]"
 
     # Convert ${model_conf} to ${model_txt} for [ openwrt-install-amlogic ], Just the first 8 columns.
-    {
-        cat ${model_conf} |
-            sed -e 's/NULL/NA/g' -e 's/[ ][ ]*//g' |
-            grep -E "^[^#ar].*" |
-            awk -F':' '{if ($6 != "NA") $6 = "/lib/u-boot/"$6; if ($7 != "NA") $7 = "/lib/u-boot/"$7; NF = 8; print}' OFS=':'
-    } >${model_txt}
+    cat ${model_conf} |
+        sed -e 's/NULL/NA/g' -e 's/[ ][ ]*//g' |
+        grep -E "^[^#ar].*" |
+        awk -F':' '{if ($6 != "NA") $6 = "/lib/u-boot/"$6; if ($7 != "NA") $7 = "/lib/u-boot/"$7; NF = 8; print}' OFS=':' \
+            >${model_txt}
 
     # Get a list of build devices
     if [[ "${make_board}" == "all" ]]; then
@@ -620,15 +654,13 @@ extract_openwrt() {
 
     # Mount bootfs
     if [[ "${bootfs_type}" == "fat32" ]]; then
-        mount -t vfat -o discard ${loop_new}p1 ${tag_bootfs}
+        mount_again vfat ${loop_new}p1 ${tag_bootfs}
     else
-        mount -t ext4 -o discard ${loop_new}p1 ${tag_bootfs}
+        mount_again ext4 ${loop_new}p1 ${tag_bootfs}
     fi
-    [[ "${?}" -eq "0" ]] || error_msg "mount ${loop_new}p1 failed!"
 
     # Mount rootfs
-    mount -t btrfs -o discard,compress=zstd:6 ${loop_new}p2 ${tag_rootfs}
-    [[ "${?}" -eq "0" ]] || error_msg "mount ${loop_new}p2 failed!"
+    mount_again btrfs ${loop_new}p2 ${tag_rootfs}
 
     # Create snapshot directory
     btrfs subvolume create ${tag_rootfs}/etc >/dev/null 2>&1
@@ -952,12 +984,13 @@ clean_tmp() {
     cd ${out_path}
 
     # Compress the OpenWrt image file
-    pigz -f *.img && sync
+    pigz -qf *.img || gzip -qf *.img
+    sync
 
     cd ${current_path}
 
     # Clear temporary files directory
-    rm -rf ${tmp_path}
+    rm -rf ${tmp_path} && sync
 }
 
 loop_make() {
@@ -1042,6 +1075,7 @@ echo -e "${INFO} Server running on Ubuntu: [ Release: ${host_release} / Host: ${
 
 # Initialize variables and download the kernel
 init_var "${@}"
+check_data
 # Find OpenWrt file
 find_openwrt
 # Download the dependency files
