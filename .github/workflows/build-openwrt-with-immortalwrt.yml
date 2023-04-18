@@ -146,6 +146,14 @@ on:
           - flippy
           - dev
 
+      openwrt_size:
+        description: "Set the rootfs size(Unit: MiB)."
+        required: false
+        default: "1024"
+        type: choice
+        options: 
+          - "1024"
+          - "2048"
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: openwrt-21.02
