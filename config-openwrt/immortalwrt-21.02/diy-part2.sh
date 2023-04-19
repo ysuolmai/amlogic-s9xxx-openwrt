@@ -8,7 +8,7 @@
 
 # ------------------------------- Main source started -------------------------------
 #
-# Modify default theme（FROM uci-theme-bootstrap CHANGE TO luci-theme-material）
+# Modify default theme（FROM uci-theme-bootstrap CHANGE TO luci-theme-aron）
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' ./feeds/luci/collections/luci/Makefile
 
 # Set etc/openwrt_release
