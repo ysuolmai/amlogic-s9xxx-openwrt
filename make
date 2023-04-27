@@ -85,8 +85,10 @@ script_repo="${script_repo//tree\/main/trunk}"
 
 # Set the kernel download repository from github.com
 kernel_repo="https://github.com/ophub/kernel"
-# Set tags for the default kernel(kernel_xxx)
-kernel_default="stable"
+# Set the tags(kernel_xxx) of the default kernel that can be replaced via the [ -u ] parameter
+default_tags="stable"
+# Set the tags(kernel_xxx) of the specified kernel, such as 5.15.y, 6.1.y, etc.
+specify_tags="${default_tags}"
 # Set the list of kernels used by default
 rk3588_kernel=("5.10.1")
 flippy_kernel=("6.1.1" "5.15.1")
@@ -277,8 +279,8 @@ check_data() {
     [[ "${#kernel_from[*]}" -eq "0" ]] && error_msg "Missing [ KERNEL_TAGS ] settings, stop building."
     # Replace custom kernel tags
     [[ -n "${kernel_usage}" ]] && {
-        kernel_default="${kernel_usage}"
-        kernel_from=(${kernel_from[*]//${kernel_default}/${kernel_usage}})
+        specify_tags="${kernel_usage}"
+        kernel_from=(${kernel_from[*]//${default_tags}/${kernel_usage}})
     }
 
     # The [ specified kernel ], Use the [ kernel version number ], such as 5.15.y, 6.1.y, etc. download from [ kernel_stable ].
@@ -372,7 +374,7 @@ query_version() {
             elif [[ "${k}" == "dev" ]]; then
                 down_kernel_list=(${dev_kernel[*]})
             elif [[ "${k}" == "specify" ]]; then
-                kd="${kernel_default}"
+                kd="${specify_tags}"
                 down_kernel_list=(${specify_kernel[*]})
             else
                 error_msg "Invalid tags."
@@ -478,7 +480,7 @@ download_kernel() {
             elif [[ "${k}" == "dev" ]]; then
                 down_kernel_list=(${dev_kernel[*]})
             elif [[ "${k}" == "specify" ]]; then
-                kd="${kernel_default}"
+                kd="${specify_tags}"
                 down_kernel_list=(${specify_kernel[*]})
             else
                 error_msg "Invalid tags."
@@ -537,9 +539,9 @@ confirm_version() {
     SOC="$(echo ${board_conf} | awk -F':' '{print $3}')"
     FDTFILE="$(echo ${board_conf} | awk -F':' '{print $4}')"
     UBOOT_OVERLOAD="$(echo ${board_conf} | awk -F':' '{print $5}')"
-    TRUST_IMG="${UBOOT_OVERLOAD}" && TRUST_IMG="${TRUST_IMG##*/}"
-    MAINLINE_UBOOT="$(echo ${board_conf} | awk -F':' '{print $6}')" && MAINLINE_UBOOT="${MAINLINE_UBOOT##*/}"
-    BOOTLOADER_IMG="$(echo ${board_conf} | awk -F':' '{print $7}')" && BOOTLOADER_IMG="${BOOTLOADER_IMG##*/}"
+    TRUST_IMG="${UBOOT_OVERLOAD}"
+    MAINLINE_UBOOT="$(echo ${board_conf} | awk -F':' '{print $6}')"
+    BOOTLOADER_IMG="$(echo ${board_conf} | awk -F':' '{print $7}')"
     KERNEL_TAGS="$(echo ${board_conf} | awk -F':' '{print $9}')"
     PLATFORM="$(echo ${board_conf} | awk -F':' '{print $10}')"
     FAMILY="$(echo ${board_conf} | awk -F':' '{print $11}')"
@@ -552,7 +554,7 @@ confirm_version() {
     [[ -n "$(echo "${support_platform[*]}" | grep -w "${PLATFORM}")" ]] || error_msg "[ ${PLATFORM} ] not supported."
 
     # Replace custom kernel tags
-    [[ -n "${kernel_usage}" && "${KERNEL_TAGS}" == "${kernel_default}" ]] && KERNEL_TAGS="${kernel_usage}"
+    [[ -n "${kernel_usage}" && "${KERNEL_TAGS}" == "${default_tags}" ]] && KERNEL_TAGS="${kernel_usage}"
 }
 
 make_image() {
@@ -1050,7 +1052,7 @@ loop_make() {
             elif [[ "${KERNEL_TAGS}" == "dev" ]]; then
                 kernel_list=(${dev_kernel[*]})
             elif [[ "${KERNEL_TAGS}" =~ ^[0-9]{1,2}\.[0-9]+ ]]; then
-                kd="${kernel_default}"
+                kd="${specify_tags}"
                 kernel_list=(${specify_kernel[*]})
             else
                 error_msg "Invalid tags."
