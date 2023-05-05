@@ -30,7 +30,7 @@
 # check_data         : Check the validity of the data
 # find_openwrt       : Find OpenWrt file (openwrt-armvirt/*rootfs.tar.gz)
 # download_depends   : Download the dependency files
-# query_version      : Query the latest kernel version
+# query_kernel       : Query the latest kernel version
 # check_kernel       : Check kernel files integrity
 # download_kernel    : Download the latest kernel
 #
@@ -87,13 +87,13 @@ script_repo="${script_repo//tree\/main/trunk}"
 kernel_repo="https://github.com/ophub/kernel"
 # Set the tags(kernel_xxx) of the default kernel that can be replaced via the [ -u ] parameter
 default_tags="stable"
-# Set the tags(kernel_xxx) of the specified kernel, such as 5.15.y, 6.1.y, etc.
-specify_tags="${default_tags}"
+# Set the tags(kernel_xxx) of the specific kernel, such as 5.15.y, 6.1.y, etc.
+specific_tags="${default_tags}"
 # Set the list of kernels used by default
-rk3588_kernel=("5.10.1")
-flippy_kernel=("6.1.1" "5.15.1")
 stable_kernel=("6.1.1" "5.15.1")
+flippy_kernel=("6.1.1" "5.15.1")
 dev_kernel=("6.1.1" "5.15.1")
+rk3588_kernel=("5.10.1")
 # Set to automatically use the latest kernel
 auto_kernel="true"
 
@@ -118,12 +118,12 @@ ERROR="[\033[91m ERROR \033[0m]"
 #================================================================================================
 
 error_msg() {
-    echo -e "${ERROR} ${1}"
+    echo -e " [💔] ${1}"
     exit 1
 }
 
 process_msg() {
-    echo -e " [\033[1;92m ${board} - ${kernel} \033[0m] ${1}"
+    echo -e " [🌿] ${1}"
 }
 
 mount_try() {
@@ -279,17 +279,17 @@ check_data() {
     [[ "${#kernel_from[*]}" -eq "0" ]] && error_msg "Missing [ KERNEL_TAGS ] settings, stop building."
     # Replace custom kernel tags
     [[ -n "${kernel_usage}" ]] && {
-        specify_tags="${kernel_usage}"
+        specific_tags="${kernel_usage}"
         kernel_from=(${kernel_from[*]//${default_tags}/${kernel_usage}})
     }
 
-    # The [ specified kernel ], Use the [ kernel version number ], such as 5.15.y, 6.1.y, etc. download from [ kernel_stable ].
-    specify_kernel=($(echo ${kernel_from[*]} | sed -e 's/[ ][ ]*/\n/g' | grep -E "^[0-9]+" | sort | uniq | xargs))
+    # The [ specific kernel ], Use the [ kernel version number ], such as 5.15.y, 6.1.y, etc. download from [ kernel_stable ].
+    specific_kernel=($(echo ${kernel_from[*]} | sed -e 's/[ ][ ]*/\n/g' | grep -E "^[0-9]+" | sort | uniq | xargs))
 
     # The [ suffix ] of KERNEL_TAGS starts with a [ letter ], such as kernel_stable, kernel_rk3588, etc.
     tags_list=($(echo ${kernel_from[*]} | sed -e 's/[ ][ ]*/\n/g' | grep -E "^[a-z]" | sort | uniq | xargs))
-    # Add the specified kernel to the list
-    [[ "${#specify_kernel[*]}" -ne "0" ]] && tags_list=(${tags_list[*]} "specify")
+    # Add the specific kernel to the list
+    [[ "${#specific_kernel[*]}" -ne "0" ]] && tags_list=(${tags_list[*]} "specific")
     # Check the kernel list
     [[ "${#tags_list[*]}" -eq "0" ]] && error_msg "The [ tags_list ] is missing, stop building."
 
@@ -356,29 +356,34 @@ download_depends() {
     chmod +x ${common_files}/usr/sbin/*
 }
 
-query_version() {
+query_kernel() {
     echo -e "${STEPS} Start querying the latest kernel version..."
 
     # Check the version on the kernel repository
     x="1"
     for k in ${tags_list[*]}; do
         {
-            # Select the corresponding kernel directory and list
+            # Select the kernel list
             kd="${k}"
-            if [[ "${k}" == "rk3588" ]]; then
-                down_kernel_list=(${rk3588_kernel[*]})
-            elif [[ "${k}" == "flippy" ]]; then
-                down_kernel_list=(${flippy_kernel[*]})
-            elif [[ "${k}" == "stable" ]]; then
+            case "${k}" in
+            stable)
                 down_kernel_list=(${stable_kernel[*]})
-            elif [[ "${k}" == "dev" ]]; then
+                ;;
+            flippy)
+                down_kernel_list=(${flippy_kernel[*]})
+                ;;
+            dev)
                 down_kernel_list=(${dev_kernel[*]})
-            elif [[ "${k}" == "specify" ]]; then
-                kd="${specify_tags}"
-                down_kernel_list=(${specify_kernel[*]})
-            else
-                error_msg "Invalid tags."
-            fi
+                ;;
+            rk3588)
+                down_kernel_list=(${rk3588_kernel[*]})
+                ;;
+            specific)
+                down_kernel_list=(${specific_kernel[*]})
+                kd="${specific_tags}"
+                ;;
+            *) error_msg "Invalid tags." ;;
+            esac
 
             # Query the name of the latest kernel version
             tmp_arr_kernels=()
@@ -424,22 +429,29 @@ query_version() {
             done
 
             # Reset the kernel array to the latest kernel version
-            if [[ "${k}" == "rk3588" ]]; then
-                unset rk3588_kernel
-                rk3588_kernel=(${tmp_arr_kernels[*]})
-            elif [[ "${k}" == "flippy" ]]; then
-                unset flippy_kernel
-                flippy_kernel=(${tmp_arr_kernels[*]})
-            elif [[ "${k}" == "stable" ]]; then
+            case "${k}" in
+            stable)
                 unset stable_kernel
                 stable_kernel=(${tmp_arr_kernels[*]})
-            elif [[ "${k}" == "dev" ]]; then
+                ;;
+            flippy)
+                unset flippy_kernel
+                flippy_kernel=(${tmp_arr_kernels[*]})
+                ;;
+            dev)
                 unset dev_kernel
                 dev_kernel=(${tmp_arr_kernels[*]})
-            elif [[ "${k}" == "specify" ]]; then
-                unset specify_kernel
-                specify_kernel=(${tmp_arr_kernels[*]})
-            fi
+                ;;
+            rk3588)
+                unset rk3588_kernel
+                rk3588_kernel=(${tmp_arr_kernels[*]})
+                ;;
+            specific)
+                unset specific_kernel
+                specific_kernel=(${tmp_arr_kernels[*]})
+                ;;
+            *) error_msg "Invalid tags." ;;
+            esac
 
             let x++
         }
@@ -471,20 +483,25 @@ download_kernel() {
         {
             # Set the kernel download list
             kd="${k}"
-            if [[ "${k}" == "rk3588" ]]; then
-                down_kernel_list=(${rk3588_kernel[*]})
-            elif [[ "${k}" == "flippy" ]]; then
-                down_kernel_list=(${flippy_kernel[*]})
-            elif [[ "${k}" == "stable" ]]; then
+            case "${k}" in
+            stable)
                 down_kernel_list=(${stable_kernel[*]})
-            elif [[ "${k}" == "dev" ]]; then
+                ;;
+            flippy)
+                down_kernel_list=(${flippy_kernel[*]})
+                ;;
+            dev)
                 down_kernel_list=(${dev_kernel[*]})
-            elif [[ "${k}" == "specify" ]]; then
-                kd="${specify_tags}"
-                down_kernel_list=(${specify_kernel[*]})
-            else
-                error_msg "Invalid tags."
-            fi
+                ;;
+            rk3588)
+                down_kernel_list=(${rk3588_kernel[*]})
+                ;;
+            specific)
+                down_kernel_list=(${specific_kernel[*]})
+                kd="${specific_tags}"
+                ;;
+            *) error_msg "Invalid tags." ;;
+            esac
 
             # Download the kernel to the storage directory
             i="1"
@@ -558,7 +575,7 @@ confirm_version() {
 }
 
 make_image() {
-    process_msg " (1/6) Make OpenWrt image."
+    process_msg "(1/6) Make OpenWrt image."
     cd ${current_path}
 
     # Set Armbian image file parameters
@@ -613,7 +630,7 @@ make_image() {
     # Format rootfs partition
     mkfs.btrfs -f -U ${ROOTFS_UUID} -L "ROOTFS" -m single ${loop_new}p2 >/dev/null 2>&1
 
-    # Write the specified bootloader for [ Amlogic ] boxes
+    # Write the specific bootloader for [ Amlogic ] boxes
     [[ "${PLATFORM}" == "amlogic" ]] && {
         bootloader_path="${uboot_path}/${PLATFORM}/bootloader"
         if [[ -n "${MAINLINE_UBOOT}" && -f "${bootloader_path}/${MAINLINE_UBOOT}" ]]; then
@@ -627,7 +644,7 @@ make_image() {
         fi
     }
 
-    # Write the specified bootloader for [ Rockchip ] boxes
+    # Write the specific bootloader for [ Rockchip ] boxes
     [[ "${PLATFORM}" == "rockchip" ]] && {
         bootloader_path="${uboot_path}/${PLATFORM}/${board}"
         if [[ -n "${BOOTLOADER_IMG}" && -f "${bootloader_path}/${BOOTLOADER_IMG}" ]] &&
@@ -648,7 +665,7 @@ make_image() {
         fi
     }
 
-    # Write the specified bootloader for [ Allwinner ] boxes
+    # Write the specific bootloader for [ Allwinner ] boxes
     [[ "${PLATFORM}" == "allwinner" ]] && {
         bootloader_path="${uboot_path}/${PLATFORM}/${board}"
         if [[ -n "${BOOTLOADER_IMG}" && -f "${bootloader_path}/${BOOTLOADER_IMG}" ]] &&
@@ -664,10 +681,10 @@ make_image() {
 }
 
 extract_openwrt() {
-    process_msg " (2/6) Extract OpenWrt files."
+    process_msg "(2/6) Extract OpenWrt files."
     cd ${current_path}
 
-    # Create OpenWrt mirror partition
+    # Create a dual-partition general directory
     tag_bootfs="${tmp_path}/${kernel}/${board}/bootfs"
     tag_rootfs="${tmp_path}/${kernel}/${board}/rootfs"
     mkdir -p ${tag_bootfs} ${tag_rootfs}
@@ -685,37 +702,37 @@ extract_openwrt() {
     # Create snapshot directory
     btrfs subvolume create ${tag_rootfs}/etc >/dev/null 2>&1
 
-    # Unzip the OpenWrt package
+    # Unzip the OpenWrt rootfs file
     tar -xzf ${openwrt_path}/${openwrt_file_name} -C ${tag_rootfs}
     rm -rf ${tag_rootfs}/lib/modules/*
     rm -f ${tag_rootfs}/rom/sbin/firstboot
 
     # Copy the common files
-    [[ -d "${common_files}" ]] && cp -rf ${common_files}/* ${tag_rootfs}
+    [[ -d "${common_files}" ]] && cp -af ${common_files}/* ${tag_rootfs}
 
     # Copy the platform files
     platform_bootfs="${platform_files}/${PLATFORM}/bootfs"
     platform_rootfs="${platform_files}/${PLATFORM}/rootfs"
-    [[ -d "${platform_bootfs}" ]] && cp -rf ${platform_bootfs}/* ${tag_bootfs}
-    [[ -d "${platform_rootfs}" ]] && cp -rf ${platform_rootfs}/* ${tag_rootfs}
+    [[ -d "${platform_bootfs}" ]] && cp -af ${platform_bootfs}/* ${tag_bootfs}
+    [[ -d "${platform_rootfs}" ]] && cp -af ${platform_rootfs}/* ${tag_rootfs}
 
     # Copy the different files
     different_bootfs="${different_files}/${board}/bootfs"
     different_rootfs="${different_files}/${board}/rootfs"
-    [[ -d "${different_bootfs}" ]] && cp -rf ${different_bootfs}/* ${tag_bootfs}
-    [[ -d "${different_rootfs}" ]] && cp -rf ${different_rootfs}/* ${tag_rootfs}
+    [[ -d "${different_bootfs}" ]] && cp -af ${different_bootfs}/* ${tag_bootfs}
+    [[ -d "${different_rootfs}" ]] && cp -af ${different_rootfs}/* ${tag_rootfs}
 
     # Copy the bootloader files
     [[ -d "${tag_rootfs}/lib/u-boot" ]] || mkdir -p "${tag_rootfs}/lib/u-boot"
     rm -rf ${tag_rootfs}/lib/u-boot/*
-    [[ -d "${bootloader_path}" ]] && cp -rf ${bootloader_path}/* ${tag_rootfs}/lib/u-boot
+    [[ -d "${bootloader_path}" ]] && cp -af ${bootloader_path}/* ${tag_rootfs}/lib/u-boot
 
     # Copy the overload files
-    [[ "${PLATFORM}" == "amlogic" ]] && cp -f ${uboot_path}/${PLATFORM}/overload/* ${tag_bootfs}
+    [[ "${PLATFORM}" == "amlogic" ]] && cp -af ${uboot_path}/${PLATFORM}/overload/* ${tag_bootfs}
 }
 
 replace_kernel() {
-    process_msg " (3/6) Replace the kernel."
+    process_msg "(3/6) Replace the kernel."
     cd ${current_path}
 
     # Determine custom kernel filename
@@ -747,7 +764,7 @@ replace_kernel() {
 }
 
 refactor_bootfs() {
-    process_msg " (4/6) Refactor bootfs files."
+    process_msg "(4/6) Refactor bootfs files."
     cd ${tag_bootfs}
 
     # Process Amlogic series boot partition files
@@ -803,7 +820,7 @@ refactor_bootfs() {
 }
 
 refactor_rootfs() {
-    process_msg " (5/6) Refactor rootfs files."
+    process_msg "(5/6) Refactor rootfs files."
     cd ${tag_rootfs}
 
     # Add directory
@@ -847,6 +864,7 @@ refactor_rootfs() {
     # brcmfmac built-in wireless network card Driver
     echo "brcmfmac" >etc/modules.d/brcmfmac
     echo "brcmutil" >etc/modules.d/brcmutil
+    echo "bcmdhd" >etc/modules.d/bcmdhd
     # USB Realtek RTL8188EU Wireless LAN Driver
     echo "r8188eu" >etc/modules.d/rtl8188eu
     # Realtek RTL8189FS Wireless LAN Driver
@@ -1002,7 +1020,7 @@ EOF
 }
 
 clean_tmp() {
-    process_msg " (6/6) Cleanup tmp files."
+    process_msg "(6/6) Cleanup tmp files."
     cd ${current_path}
 
     # Unmount the OpenWrt image file
@@ -1043,20 +1061,25 @@ loop_make() {
 
             # Determine kernel tags
             kd="${KERNEL_TAGS}"
-            if [[ "${KERNEL_TAGS}" == "rk3588" ]]; then
-                kernel_list=(${rk3588_kernel[*]})
-            elif [[ "${KERNEL_TAGS}" == "flippy" ]]; then
-                kernel_list=(${flippy_kernel[*]})
-            elif [[ "${KERNEL_TAGS}" == "stable" ]]; then
+            case "${KERNEL_TAGS}" in
+            stable)
                 kernel_list=(${stable_kernel[*]})
-            elif [[ "${KERNEL_TAGS}" == "dev" ]]; then
+                ;;
+            flippy)
+                kernel_list=(${flippy_kernel[*]})
+                ;;
+            dev)
                 kernel_list=(${dev_kernel[*]})
-            elif [[ "${KERNEL_TAGS}" =~ ^[0-9]{1,2}\.[0-9]+ ]]; then
-                kd="${specify_tags}"
-                kernel_list=(${specify_kernel[*]})
-            else
-                error_msg "Invalid tags."
-            fi
+                ;;
+            rk3588)
+                kernel_list=(${rk3588_kernel[*]})
+                ;;
+            [0-9]*)
+                kernel_list=(${specific_kernel[*]})
+                kd="${specific_tags}"
+                ;;
+            *) error_msg "Invalid tags." ;;
+            esac
 
             i="1"
             for k in ${kernel_list[*]}; do
@@ -1073,7 +1096,7 @@ loop_make() {
                     fi
 
                     # Check disk space size
-                    echo -ne "(${j}.${i}) Start making OpenWrt [ ${board} - ${kd}/${kernel} ]. "
+                    echo -ne "(${j}.${i}) Start making OpenWrt [\033[92m ${board} - ${kd}/${kernel} \033[0m]. "
                     now_remaining_space="$(df -Tk ${current_path} | grep '/dev/' | awk '{print $5}' | echo $(($(xargs) / 1024 / 1024)))"
                     if [[ "${now_remaining_space}" -le "3" ]]; then
                         echo -e "${WARNING} Remaining space is less than 3G, exit this build."
@@ -1122,7 +1145,7 @@ find_openwrt
 # Download the dependency files
 download_depends
 # Query the latest kernel version
-[[ "${auto_kernel}" == "true" ]] && query_version
+[[ "${auto_kernel}" == "true" ]] && query_kernel
 # Download the kernel files
 download_kernel
 
