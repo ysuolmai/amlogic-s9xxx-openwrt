@@ -155,6 +155,7 @@ env:
   CONFIG_FILE: config-openwrt/lede-master/config
   DIY_P1_SH: config-openwrt/lede-master/diy-part1.sh
   DIY_P2_SH: config-openwrt/lede-master/diy-part2.sh
+  DIY_P3_SH: config-openwrt/lede-master/diy-part3.sh
   TZ: America/New_York
 
 jobs:
@@ -207,6 +208,14 @@ jobs:
       - name: Install feeds
         run: cd openwrt/ && ./scripts/feeds install -a
 
+      - name: Load custom configuration
+        run: |
+          [[ -d "files" ]] && mv -f files openwrt/files
+          [[ -e "${CONFIG_FILE}" ]] && cp -f ${CONFIG_FILE} openwrt/.config
+          chmod +x ${DIY_P2_SH}
+          cd openwrt/
+          ${GITHUB_WORKSPACE}/${DIY_P2_SH}
+
       - name: Download package
         id: package
         run: |
@@ -216,13 +225,11 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
       
-      - name: Load custom configuration
+      - name: Load custom configuration part 2
         run: |
-          [[ -d "files" ]] && mv -f files openwrt/files
-          [[ -e "${CONFIG_FILE}" ]] && cp -f ${CONFIG_FILE} openwrt/.config
-          chmod +x ${DIY_P2_SH}
+          chmod +x ${DIY_P3_SH}
           cd openwrt/
-          ${GITHUB_WORKSPACE}/${DIY_P2_SH}
+          ${GITHUB_WORKSPACE}/${DIY_P3_SH}
 
       - name: Compile the firmware
         id: compile
