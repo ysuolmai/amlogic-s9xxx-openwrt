@@ -13,7 +13,7 @@ on:
       openwrt_board:
         description: "Select device board"
         required: false
-        default: "s905x3_s905l3a"
+        default: "s905x3-tx3_s905l3a-cm311"
         type: choice
         options:
           - all
