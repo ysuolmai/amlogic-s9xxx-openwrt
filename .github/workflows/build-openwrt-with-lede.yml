@@ -225,12 +225,6 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
       
-      - name: Load custom configuration part 2
-        run: |
-          chmod +x ${DIY_P3_SH}
-          cd openwrt/
-          ${GITHUB_WORKSPACE}/${DIY_P3_SH}
-
       - name: Compile the firmware
         id: compile
         run: |
