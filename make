@@ -93,6 +93,7 @@ specific_tags="${default_tags}"
 stable_kernel=("6.1.1" "5.15.1")
 flippy_kernel=("6.1.1" "5.15.1")
 dev_kernel=("6.1.1" "5.15.1")
+beta_kernel=("6.1.1" "5.15.1")
 rk3588_kernel=("5.10.1")
 # Set to automatically use the latest kernel
 auto_kernel="true"
@@ -198,12 +199,13 @@ init_var() {
             ;;
         -k | --Kernel)
             if [[ -n "${2}" ]]; then
-                oldIFS=$IFS
-                IFS=_
+                oldIFS="${IFS}"
+                IFS="_"
                 flippy_kernel=(${2})
                 stable_kernel=(${2})
                 dev_kernel=(${2})
-                IFS=$oldIFS
+                beta_kernel=(${2})
+                IFS="${oldIFS}"
                 shift
             else
                 error_msg "Invalid -k parameter [ ${2} ]!"
@@ -261,7 +263,7 @@ check_data() {
             cat ${model_conf} |
                 sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' |
                 grep -E "^[^#].*:yes$" | awk -F':' '{print $13}' |
-                sort | uniq | xargs
+                sort -u | xargs
         ))
     else
         board_list=":($(echo ${make_board} | sed -e 's/_/\|/g')):(yes|no)"
@@ -274,7 +276,7 @@ check_data() {
         cat ${model_conf} |
             sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' -e 's/\.y/\.1/g' |
             grep -E "^[^#].*${board_list}$" | awk -F':' '{print $9}' |
-            sort | uniq | xargs
+            sort -u | xargs
     ))
     [[ "${#kernel_from[*]}" -eq "0" ]] && error_msg "Missing [ KERNEL_TAGS ] settings, stop building."
     # Replace custom kernel tags
@@ -284,10 +286,10 @@ check_data() {
     }
 
     # The [ specific kernel ], Use the [ kernel version number ], such as 5.15.y, 6.1.y, etc. download from [ kernel_stable ].
-    specific_kernel=($(echo ${kernel_from[*]} | sed -e 's/[ ][ ]*/\n/g' | grep -E "^[0-9]+" | sort | uniq | xargs))
+    specific_kernel=($(echo ${kernel_from[*]} | sed -e 's/[ ][ ]*/\n/g' | grep -E "^[0-9]+" | sort -u | xargs))
 
     # The [ suffix ] of KERNEL_TAGS starts with a [ letter ], such as kernel_stable, kernel_rk3588, etc.
-    tags_list=($(echo ${kernel_from[*]} | sed -e 's/[ ][ ]*/\n/g' | grep -E "^[a-z]" | sort | uniq | xargs))
+    tags_list=($(echo ${kernel_from[*]} | sed -e 's/[ ][ ]*/\n/g' | grep -E "^[a-z]" | sort -u | xargs))
     # Add the specific kernel to the list
     [[ "${#specific_kernel[*]}" -ne "0" ]] && tags_list=(${tags_list[*]} "specific")
     # Check the kernel list
@@ -377,6 +379,9 @@ query_kernel() {
             dev)
                 down_kernel_list=(${dev_kernel[*]})
                 ;;
+            beta)
+                down_kernel_list=(${beta_kernel[*]})
+                ;;
             rk3588)
                 down_kernel_list=(${rk3588_kernel[*]})
                 ;;
@@ -444,6 +449,10 @@ query_kernel() {
                 unset dev_kernel
                 dev_kernel=(${tmp_arr_kernels[*]})
                 ;;
+            beta)
+                unset beta_kernel
+                beta_kernel=(${tmp_arr_kernels[*]})
+                ;;
             rk3588)
                 unset rk3588_kernel
                 rk3588_kernel=(${tmp_arr_kernels[*]})
@@ -494,6 +503,9 @@ download_kernel() {
                 ;;
             dev)
                 down_kernel_list=(${dev_kernel[*]})
+                ;;
+            beta)
+                down_kernel_list=(${beta_kernel[*]})
                 ;;
             rk3588)
                 down_kernel_list=(${rk3588_kernel[*]})
@@ -1030,16 +1042,11 @@ clean_tmp() {
     cd ${current_path}
 
     # Unmount the OpenWrt image file
+    fstrim ${tag_bootfs} 2>/dev/null
+    fstrim ${tag_rootfs} 2>/dev/null
     umount -f ${tag_bootfs} 2>/dev/null
     umount -f ${tag_rootfs} 2>/dev/null
     losetup -d ${loop_new} 2>/dev/null
-
-    # Loop to cancel other mounts
-    for x in $(lsblk | grep $(pwd) | grep -oE 'loop[0-9]+' | sort | uniq); do
-        umount -f /dev/${x}p* 2>/dev/null
-        losetup -d /dev/${x} 2>/dev/null
-    done
-    losetup -D
 
     cd ${out_path}
     # Compress the OpenWrt image file
@@ -1057,7 +1064,6 @@ loop_make() {
     j="1"
     for b in ${make_openwrt[*]}; do
         {
-
             # Set specific configuration for building OpenWrt system
             board="${b}"
             confirm_version
@@ -1073,6 +1079,9 @@ loop_make() {
                 ;;
             dev)
                 kernel_list=(${dev_kernel[*]})
+                ;;
+            beta)
+                kernel_list=(${beta_kernel[*]})
                 ;;
             rk3588)
                 kernel_list=(${rk3588_kernel[*]})
