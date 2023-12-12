@@ -21,10 +21,11 @@ on:
       openwrt_board:
         description: "Select device board"
         required: false
-        default: "all"
+        default: "s905x3-whale_s905l3a-cm311"
         type: choice
         options:
           - all
+          - s905x3-whale_s905l3a-cm311
           - s905w_s905x_s905mb_s905l3b_s905x2_s905x3_s912_s922x_s922x-ct2000_s922x-reva
           - s905x3-x88-pro-x3_s912-m8s-pro_s905x-t95_s912-t95z-plus_s905l3-unt400g1_s905lb-r3300l
           - smart-am40_station-m1_sw799_tn3399_zysj_tvi3315a_xiaobao_zcube1-max
