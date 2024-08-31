@@ -40,49 +40,28 @@ git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
 #luci-app-zerotier
 git clone https://github.com/rufengsuixing/luci-app-zerotier.git package/luci-app-zerotier
 
-provided_config_lines=(
-#"CONFIG_PACKAGE_luci-app-ssr-plus=y"
-#"CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y"
-"CONFIG_PACKAGE_luci-app-zerotier=y"
-"CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=y"
-"CONFIG_PACKAGE_luci-app-adguardhome=y"
-"CONFIG_PACKAGE_luci-i18n-adguardhome-zh-cn=y"
-"CONFIG_PACKAGE_luci-app-ddns-go=y"
-"CONFIG_PACKAGE_luci-i18n-ddns-go-zh-cn=y"
-"CONFIG_PACKAGE_luci-app-poweroff=y"
-"CONFIG_PACKAGE_luci-i18n-poweroff-zh-cn=y"
-"CONFIG_PACKAGE_cpufreq=y"
-"CONFIG_PACKAGE_luci-app-cpufreq=y"
-"CONFIG_PACKAGE_luci-i18n-cpufreq-zh-cn=y"
-"CONFIG_PACKAGE_luci-app-ttyd=y"
-"CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn=y"
-"CONFIG_PACKAGE_ttyd=y"
-"CONFIG_TARGET_INITRAMFS=n"
-#"CONFIG_PACKAGE_luci-app-passwall=y"
-#"CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y"
-"CONFIG_PACKAGE_luci-app-homeproxy=y"
-"CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
+
+
+keywords_to_delete=(
+"passwall"
+"v2ray"
+"sing-box"
+"ddns"
+"SINGBOX"
+"openvpn"
+"uugamebooster"
+#"luci-app-homeproxy"
+"CONFIG_TARGET_INITRAMFS"
+"tailscale"
 )
 
-#if [[ $FIRMWARE_TAG != *"NOWIFI"* ]]; then
-#  	provided_config_lines+=("CONFIG_PACKAGE_luci-app-diskman=y")
-#  	provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-luci-app-diskman=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-app-docker=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-docker-zh-cn=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-app-dockerman=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=y")
-#fi
-
-# Path to the .config file
-config_file_path=".config" 
-
-# Append lines to the .config file
-for line in "${provided_config_lines[@]}"; do
-    echo "$line" >> "$config_file_path"
+for line in "${keywords_to_delete[@]}"; do
+    sed -i "/$line/d" ./.config
 done
+
 provided_config_lines=(
-#"CONFIG_PACKAGE_luci-app-ssr-plus=y"
-#"CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-ssr-plus=y"
+"CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y"
 "CONFIG_PACKAGE_luci-app-zerotier=y"
 "CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=y"
 "CONFIG_PACKAGE_luci-app-adguardhome=y"
@@ -97,21 +76,13 @@ provided_config_lines=(
 "CONFIG_PACKAGE_luci-app-ttyd=y"
 "CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn=y"
 "CONFIG_PACKAGE_ttyd=y"
-"CONFIG_TARGET_INITRAMFS=n"
 #"CONFIG_PACKAGE_luci-app-passwall=y"
 #"CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y"
 "CONFIG_PACKAGE_luci-app-homeproxy=y"
 "CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
+"CONFIG_PACKAGE_luci-theme-argon=y"
+"CONFIG_PACKAGE_luci-app-argon-config=y"
 )
-
-#if [[ $FIRMWARE_TAG != *"NOWIFI"* ]]; then
-#  	provided_config_lines+=("CONFIG_PACKAGE_luci-app-diskman=y")
-#  	provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-luci-app-diskman=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-app-docker=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-docker-zh-cn=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-app-dockerman=y")
-#    provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=y")
-#fi
 
 # Path to the .config file
 config_file_path=".config" 
@@ -144,8 +115,12 @@ if [ -d *"homeproxy"* ]; then
 
 	cd $PKG_PATCH && echo "homeproxy date has been updated!"
 fi
+
 ./scripts/feeds update -a
 ./scripts/feeds install -a
+
+#修改默认主题
+sed -i "s/luci-theme-bootstrap/luci-theme-argon/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
 
 #
 # Apply patch
