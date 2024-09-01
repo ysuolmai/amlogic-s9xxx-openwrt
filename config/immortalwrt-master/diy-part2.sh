@@ -40,6 +40,9 @@ git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
 #luci-app-zerotier
 git clone https://github.com/rufengsuixing/luci-app-zerotier.git package/luci-app-zerotier
 
+#luci-theme-argon
+git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+
 
 
 keywords_to_delete=(
