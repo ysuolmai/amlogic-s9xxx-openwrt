@@ -34,8 +34,6 @@ git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
 git clone --depth=1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff
 git clone --depth=1 https://github.com/VIKINGYFY/homeproxy package/homeproxy
-#DDNS-go
-git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
 
 #luci-app-zerotier
 git clone https://github.com/rufengsuixing/luci-app-zerotier.git package/luci-app-zerotier
