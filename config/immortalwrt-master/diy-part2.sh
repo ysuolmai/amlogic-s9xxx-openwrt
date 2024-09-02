@@ -83,8 +83,8 @@ provided_config_lines=(
 #"CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y"
 "CONFIG_PACKAGE_luci-app-homeproxy=y"
 "CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
-"CONFIG_PACKAGE_luci-theme-argon=y"
-"CONFIG_PACKAGE_luci-app-argon-config=y"
+#"CONFIG_PACKAGE_luci-theme-argon=y"
+#"CONFIG_PACKAGE_luci-app-argon-config=y"
 )
 
 # Path to the .config file
