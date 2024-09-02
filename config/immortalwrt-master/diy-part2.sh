@@ -63,8 +63,8 @@ for line in "${keywords_to_delete[@]}"; do
 done
 
 provided_config_lines=(
-"CONFIG_PACKAGE_luci-app-ssr-plus=y"
-"CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y"
+#"CONFIG_PACKAGE_luci-app-ssr-plus=y"
+#"CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y"
 "CONFIG_PACKAGE_luci-app-zerotier=y"
 "CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=y"
 "CONFIG_PACKAGE_luci-app-adguardhome=y"
@@ -83,8 +83,8 @@ provided_config_lines=(
 #"CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y"
 "CONFIG_PACKAGE_luci-app-homeproxy=y"
 "CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
-#"CONFIG_PACKAGE_luci-theme-argon=y"
-#"CONFIG_PACKAGE_luci-app-argon-config=y"
+"CONFIG_PACKAGE_luci-theme-argon=y"
+"CONFIG_PACKAGE_luci-app-argon-config=y"
 )
 
 # Path to the .config file
@@ -123,7 +123,7 @@ fi
 ./scripts/feeds install -a
 
 #修改默认主题
-#sed -i "s/luci-theme-bootstrap/luci-theme-argon/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
+sed -i "s/luci-theme-bootstrap/luci-theme-argon/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
 
 #
 # Apply patch
