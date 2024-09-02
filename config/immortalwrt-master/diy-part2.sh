@@ -123,7 +123,7 @@ fi
 ./scripts/feeds install -a
 
 #修改默认主题
-sed -i "s/luci-theme-bootstrap/luci-theme-argon/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
+#sed -i "s/luci-theme-bootstrap/luci-theme-argon/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
 
 #
 # Apply patch
