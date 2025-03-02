@@ -28,13 +28,13 @@ on:
           - s905w_s905x_s905mb_s905l3a_s905l3b_s905x2_s905x3_s912_s922x_s922x-ct2000_s922x-reva
           - s905x3-x88-pro-x3_s912-m8s-pro_s905x-t95_s912-t95z-plus_s905l3-unt400g1_s905lb-r3300l
           - s912-x92_s922x_s922x-ct2000_s922x-reva_seewo-sv21_smart-am40_station-m1_sw799_swan1-w28
-          - tanix-tx6_tb-ls3399_tn3399_tpm312_tqc-a01_tvi3315a_vplus_xiaobao_zcube1-max_zk-r39a_zysj
-          - vplus_tanix-tx6_tqc-a01
+          - tanix-tx6_tb-ls3399_tn3399_tpm312_tqc-a01_tvi3315a_vplus_wxy-oec_xiaobao_yskj_zcube1-max_zk-r39a_zysj
           - a311d
           - beikeyun
           - chainedbox
           - crrc
           - dg3399
+          - dg-tn3568
           - dlfr100
           - e20c
           - e25
@@ -42,6 +42,7 @@ on:
           - emb3531
           - fine3399
           - firefly-rk3399
+          - fmx1-pro
           - jp-tvbox
           - h28k
           - h66k
@@ -166,14 +167,16 @@ on:
           - tqc-a01
           - tvi3315a
           - vplus
+          - wxy-oec
           - xiaobao
+          - yskj
           - zcube1-max
           - zk-r39a
           - zysj
       openwrt_kernel:
         description: "Select kernel version"
         required: false
-        default: "6.1.y_6.6.y"
+        default: "6.1.y_6.12.y"
         type: choice
         options:
           - 5.4.y
@@ -181,8 +184,12 @@ on:
           - 5.15.y
           - 6.1.y
           - 6.6.y
+          - 6.12.y
+          - 5.4.y_5.10.y
+          - 5.15.y_6.1.y
+          - 6.1.y_6.12.y
           - 6.1.y_6.6.y
-          - 5.15.y_5.10.y
+          - 6.6.y_6.12.y
       auto_kernel:
         description: "Auto use the latest kernel"
         required: false
@@ -247,7 +254,7 @@ jobs:
           sudo rm -f /swapfile /mnt/swapfile
           sudo -E apt-get -y update
           sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
-          sudo -E apt-get -y install $(curl -fsSL https://is.gd/depend_ubuntu2204_openwrt)
+          sudo -E apt-get -y install $(curl -fsSL https://tinyurl.com/ubuntu2204-make-openwrt)
           sudo -E systemctl daemon-reload
           #sudo -E apt-get -y full-upgrade
           sudo -E apt-get -y autoremove --purge
@@ -303,19 +310,20 @@ jobs:
           ln -sf /builder/openwrt ${GITHUB_WORKSPACE}/openwrt
           ln -sf /builder/openwrt /home/runner/work/_actions/ophub/amlogic-s9xxx-openwrt/main/openwrt
 
-          latest_version="$(curl -s \
-                              -H "Accept: application/vnd.github+json" \
-                              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                              https://api.github.com/repos/${GITHUB_REPOSITORY}/releases?per_page=100 |
-                              jq '.[]' |
-                              jq -s --arg RTK "OpenWrt_${{ inputs.source_branch }}_" '.[] | select(.tag_name | contains($RTK))' |
-                              jq -s '.[].assets[] | {data:.updated_at, url:.browser_download_url}' |
-                              jq -s --arg BOARD "-rootfs.tar.gz" '.[] | select(.url | endswith($BOARD))' |
-                              jq -s 'sort_by(.data)|reverse[]' |
-                              jq -s '.[0]' -c
-                          )"
+          latest_version=$(curl -s \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                https://api.github.com/repos/${GITHUB_REPOSITORY}/releases?per_page=100 | \
+                jq -r --arg RTK "OpenWrt_${{ inputs.source_branch }}_" \
+                --arg BOARD "-rootfs.tar.gz" \
+                '[.[] | select(.tag_name | contains($RTK))] |
+                map(.assets[] | select(.browser_download_url | endswith($BOARD))) |
+                sort_by(.updated_at) |
+                reverse |
+                .[0] |
+                {data: .updated_at, url: .browser_download_url}')
 
-          [[ "${latest_version}" == "null" ]] && echo "Invalid OpenWrt rootfs download address." && exit 1
+          [[ -z "${latest_version}" || "${latest_version}" == "null" ]] && echo "Invalid OpenWrt rootfs download address." && exit 1
           latest_updated_at="$(echo ${latest_version} | jq -r '.data')"
           latest_url="$(echo ${latest_version} | jq -r '.url')"
 
