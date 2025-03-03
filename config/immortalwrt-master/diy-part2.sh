@@ -248,7 +248,7 @@ install -Dm755 "${GITHUB_WORKSPACE}/patch/99_set_argon_primary.sh" "package/base
 UPDATE_VERSION() {
 	local PKG_NAME=$1
 	local PKG_MARK=${2:-not}
-	local PKG_FILES=$(find ./ ../feeds/packages/ -maxdepth 3 -type f -wholename "*/$PKG_NAME/Makefile")
+	local PKG_FILES=$(find ./package ./feeds -maxdepth 3 -type f -wholename "*/$PKG_NAME/Makefile")
 
 	echo " "
 
