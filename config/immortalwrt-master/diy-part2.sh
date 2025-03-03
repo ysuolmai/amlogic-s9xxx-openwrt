@@ -243,6 +243,12 @@ find ./ -name "dark.less" -exec sed -i 's/#5e72e4/#31A1A1/g; s/#483d8b/#31A1A1/g
 #修改ttyd为免密
 install -Dm755 "${GITHUB_WORKSPACE}/patch/99_ttyd-nopass.sh" "package/base-files/files/etc/uci-defaults/99_ttyd-nopass"
 install -Dm755 "${GITHUB_WORKSPACE}/patch/99_set_argon_primary.sh" "package/base-files/files/etc/uci-defaults/99_set_argon_primary"
+install -Dm755 "${GITHUB_WORKSPACE}/scripts/99-distfeeds.conf" "package/emortal/default-settings/files/99-distfeeds.conf"
+sed -i "/define Package\/default-settings\/install/a\\
+\\t\$(INSTALL_DIR) \$(1)/etc\\n\
+\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" "package/emortal/default-settings/Makefile"
+
+
 
 #更新软件包版本
 UPDATE_VERSION() {
