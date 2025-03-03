@@ -220,6 +220,15 @@ on:
         options:
           - save
           - temp
+      openwrt_size:
+        description: "size rootfs size"
+        required: false
+        default: "256/1024"
+        type: choice
+        options: 
+          - 256/1024
+          - 256/2048
+          - 256/4096
       builder_name:
         description: "Set OpenWrt builder signature."
         required: false
