@@ -115,12 +115,12 @@ UPDATE_PACKAGE "xray-core xray-plugin dns2tcp dns2socks haproxy hysteria \
 UPDATE_PACKAGE "luci-app-netspeedtest" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"
 UPDATE_PACKAGE "speedtest-cli" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"
 
-UPDATE_PACKAGE "luci-app-adguardhome" "https://github.com/ysuolmai/luci-app-adguardhome.git" "apk"
+UPDATE_PACKAGE "luci-app-adguardhome" "https://github.com/ysuolmai/luci-app-adguardhome.git" "master"
 #UPDATE_PACKAGE "luci-app-tailscale" "asvow/luci-app-tailscale" "main"
 
 keywords_to_delete=(
     "uugamebooster" "luci-app-wol" "luci-i18n-wol-zh-cn" "CONFIG_TARGET_INITRAMFS" "ddns" "LSUSB" "mihomo"
-    "smartdns" "kucat" "bootstrap" "openvpn"
+    "smartdns" "kucat" "bootstrap" "openvpn" "apk"
 )
 
 
@@ -217,6 +217,10 @@ provided_config_lines=(
     "CONFIG_PACKAGE_kmod-veth=y"
     "CONFIG_PACKAGE_automount=y"
     "CONFIG_PACKAGE_luci-app-frps=y" 
+    "CONFIG_USE_APK=n"
+    "CONFIG_USE_OPKG=y"
+    "CONFIG_PACKAGE_opkg=y"
+    "CONFIG_OPKG_USE_CURL=y"
 )
 
 
