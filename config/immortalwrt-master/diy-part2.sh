@@ -223,6 +223,7 @@ provided_config_lines=(
     "CONFIG_OPKG_USE_CURL=y"
     "CONFIG_PACKAGE_luci-app-istorex=y"
     "CONFIG_PACKAGE_luci-app-store=y"
+    "CONFIG_PACKAGE_luci-app-openclash=y"
 )
 
 
