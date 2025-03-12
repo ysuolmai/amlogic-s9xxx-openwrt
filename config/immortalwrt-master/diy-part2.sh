@@ -225,8 +225,6 @@ provided_config_lines=(
     "CONFIG_PACKAGE_luci-app-store=y"
     "CONFIG_PACKAGE_luci-app-openclash=y"
     "CONFIG_PACKAGE_luci-app-ssr-plus=y"
-    "CONFIG_PACKAGE_luci-app-lucky=y"
-
 )
 
 
