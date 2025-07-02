@@ -212,6 +212,8 @@ for line in "${provided_config_lines[@]}"; do
     echo "$line" >> .config
 done
 
+make defconfig
+make download -j8
 
 find ./ -name "cascade.css" -exec sed -i 's/#5e72e4/#31A1A1/g; s/#483d8b/#31A1A1/g' {} \;
 find ./ -name "dark.css" -exec sed -i 's/#5e72e4/#31A1A1/g; s/#483d8b/#31A1A1/g' {} \;
@@ -293,4 +295,6 @@ if [[ -d ./feeds/packages/lang/golang ]]; then
 	\rm -rf ./feeds/packages/lang/golang
 	git clone $GOLANG_REPO -b $GOLANG_BRANCH ./feeds/packages/lang/golang
 fi
+
+
 
