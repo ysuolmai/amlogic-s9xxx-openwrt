@@ -346,7 +346,9 @@ jobs:
         run: |
           [[ -d "files" ]] && mv -f files openwrt/files
           [[ -e "${CONFIG_FILE}" ]] && cp -f ${CONFIG_FILE} openwrt/.config
-          
+          chmod +x ${DIY_P2_SH}
+          cd openwrt/
+          ${GITHUB_WORKSPACE}/${DIY_P2_SH}       
 
       - name: Download package
         id: package
@@ -356,14 +358,6 @@ jobs:
           make download -j8
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
-
-      - name: run diy script
-        id: diy
-        run: |
-          chmod +x ${DIY_P2_SH}
-          cd openwrt/
-          ${GITHUB_WORKSPACE}/${DIY_P2_SH}
-
       
       - name: Compile the OpenWrt
         id: compile
