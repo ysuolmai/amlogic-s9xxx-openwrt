@@ -21,7 +21,7 @@ on:
       openwrt_board:
         description: "Select device board"
         required: false
-        default: "a311d-oes"
+        default: "a311d-oes_s905l3a-cm311_nanopi-r5c"
         type: choice
         options:
           - all
@@ -30,6 +30,7 @@ on:
           - tb-ls3399_tn3399_tpm312_tqc-a01_tvi3315a_vplus_wxy-oect_wxy-oec-replaced_xiaobao_yskj_zcube1-max_zk-r39a_zysj
           - a311d
           - a311d-oes
+          - a311d-oes_s905l3a-cm311_nanopi-r5c
           - alark35-3500
           - anas3035
           - beikeyun
