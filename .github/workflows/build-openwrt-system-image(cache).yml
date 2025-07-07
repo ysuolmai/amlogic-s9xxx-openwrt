@@ -3,7 +3,7 @@
 # Description: Build OpenWrt system image
 #============================================================================================
 
-name: Build OpenWrt system image
+name: Build OpenWrt system image (cache)
 
 on:
   repository_dispatch:
