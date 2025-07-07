@@ -178,7 +178,7 @@ on:
           - wxy-oec-replaced
           - xiaobao
           - yskj
-          - z 인증서
+          - zcube1-max
           - zk-r39a
           - zysj
       openwrt_kernel:
@@ -324,6 +324,7 @@ jobs:
           # Get repository hash for cache key
           cd openwrt
           echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> ${GITHUB_OUTPUT}
+          cd ..
 
           # Set output information
           echo "build_tag=OpenWrt_${TAGS_NAME}_${{ inputs.openwrt_storage }}_$(date +"%Y.%m")" >> ${GITHUB_OUTPUT}
