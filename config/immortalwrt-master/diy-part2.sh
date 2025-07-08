@@ -287,13 +287,5 @@ if [ -d "package/luci-app-vlmcsd" ]; then
 fi
 
 
-#update golang
-GOLANG_REPO="https://github.com/sbwml/packages_lang_golang"
-GOLANG_BRANCH="24.x"
-if [[ -d ./feeds/packages/lang/golang ]]; then
-	\rm -rf ./feeds/packages/lang/golang
-	git clone $GOLANG_REPO -b $GOLANG_BRANCH ./feeds/packages/lang/golang
-fi
-
 
 
