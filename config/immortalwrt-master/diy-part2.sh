@@ -115,6 +115,8 @@ for keyword in "${keywords_to_delete[@]}"; do
     sed -i "/$keyword/d" ./.config
 done
 
+sed -i '/apk/I s/=y$/=n/' .config
+
 # Configuration lines to append to .config
 provided_config_lines=(
     "CONFIG_PACKAGE_luci-app-zerotier=y"
