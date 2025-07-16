@@ -248,37 +248,13 @@ fi
 
 
 if [ -d "package/vlmcsd" ]; then
-    mkdir -p "package/vlmcsd/patches"
-    cp -f "${GITHUB_WORKSPACE}/Scripts/001-fix_compile_with_ccache.patch" "package/vlmcsd/patches"
+    local dir="${GITHUB_WORKSPACE}/feeds/packages/net/vlmcsd"
+    local patch_src="${GITHUB_WORKSPACE}/diypatch/001-fix_compile_with_ccache.patch"
+    local patch_dest="$dir/patches"
 
-    MAKEFILE="package/vlmcsd/Makefile"
-    cp -f "${GITHUB_WORKSPACE}/Scripts/992_vlmcsd_init" "package/vlmcsd/files/vlmcsd.init"
-    chmod +x package/vlmcsd/files/vlmcsd.init
-    
-    # 如果 Makefile 存在且尚未包含 INSTALL_INIT_SCRIPT，则插入 init.d 安装逻辑
-    if [[ -f "$MAKEFILE" && ! $(grep -q "INSTALL_INIT_SCRIPT" "$MAKEFILE") ]]; then
-        echo "🛠 正在补丁 package/vlmcsd/Makefile 添加 init 脚本逻辑..."
-
-        awk '
-            BEGIN { in_block=0 }
-            {
-                if ($0 ~ /^define Package\/vlmcsd\/install/) {
-                    in_block = 1
-                }
-
-                if (in_block && $0 ~ /^endef/) {
-                    print "\t$(INSTALL_DIR) $(1)/etc/init.d"
-                    print "\t$(INSTALL_BIN) ./files/vlmcsd.init $(1)/etc/init.d/vlmcsd"
-                    in_block = 0
-                }
-
-                print
-            }
-        ' "$MAKEFILE" > "$MAKEFILE.tmp" && mv "$MAKEFILE.tmp" "$MAKEFILE"
-	echo "$MAKEFILE"
-        echo "✅ Makefile 补丁完成: 添加 init 脚本安装逻辑。"
-    else
-        echo "ℹ️ Makefile 已存在或已有 init 脚本安装逻辑，跳过。"
+    if [ -d "$dir" ]; then
+        mkdir -p "$patch_dest"
+        cp -f "$patch_src" "$patch_dest"
     fi
 fi
 
