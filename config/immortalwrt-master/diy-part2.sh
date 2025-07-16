@@ -108,7 +108,7 @@ wget https://raw.githubusercontent.com/lisaac/luci-app-diskman/master/applicatio
 keywords_to_delete=(
     "xiaomi_ax3600" "xiaomi_ax9000" "xiaomi_ax1800" "glinet" "jdcloud_ax6600" "linksys" "link_nn6600" "kucat" "re-cs-02"
     "mr7350" "uugamebooster" "luci-app-wol" "luci-i18n-wol-zh-cn" "CONFIG_TARGET_INITRAMFS" "ddns" "luci-app-advancedplus" "mihomo" "nikki"
-    "smartdns" "kucat" "bootstrap"
+    "smartdns" "kucat" "bootstrap" "material"
 )
 
 for keyword in "${keywords_to_delete[@]}"; do
