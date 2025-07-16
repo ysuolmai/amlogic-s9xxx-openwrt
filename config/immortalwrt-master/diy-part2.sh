@@ -248,9 +248,9 @@ fi
 
 
 if [ -d "package/vlmcsd" ]; then
-    local dir="${GITHUB_WORKSPACE}/feeds/packages/net/vlmcsd"
-    local patch_src="${GITHUB_WORKSPACE}/diypatch/001-fix_compile_with_ccache.patch"
-    local patch_dest="$dir/patches"
+    dir="${GITHUB_WORKSPACE}/feeds/packages/net/vlmcsd"
+    patch_src="${GITHUB_WORKSPACE}/diypatch/001-fix_compile_with_ccache.patch"
+    patch_dest="$dir/patches"
 
     if [ -d "$dir" ]; then
         mkdir -p "$patch_dest"
