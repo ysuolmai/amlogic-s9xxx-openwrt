@@ -342,7 +342,7 @@ jobs:
       - name: Cache Toolchain(缓存工具链)
         uses: HiGarfield/cachewrtbuild@main
         with:
-          ccache: false
+          ccache: true
           mixkey: ${{ inputs.source_branch }}-${{env.WRT_HASH}}
           prefix: "openwrt"
 
