@@ -215,7 +215,7 @@ provided_config_lines=(
     "CONFIG_PACKAGE_luci-app-openclash=y"
     "CONFIG_PACKAGE_luci-app-podman=y"
     "CONFIG_PACKAGE_podman=y"
-    "CONFIG_PACKAGE_luci-app-quickfile=y"
+    #"CONFIG_PACKAGE_luci-app-quickfile=y"
 )
 
 # Append configuration lines to .config
