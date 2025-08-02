@@ -30,3 +30,284 @@ git clone https://github.com/ophub/luci-app-amlogic.git package/luci-app-amlogic
 # git apply ../config/patches/{0001*,0002*}.patch --directory=feeds/luci
 #
 # ------------------------------- Other ends -------------------------------
+#安装和更新软件包
+UPDATE_PACKAGE() {
+	local PKG_NAME=$1
+	local PKG_REPO=$2
+	local PKG_BRANCH=$3
+	local PKG_SPECIAL=$4
+
+	# 清理旧的包
+	read -ra PKG_NAMES <<< "$PKG_NAME"  # 将PKG_NAME按空格分割成数组
+	for NAME in "${PKG_NAMES[@]}"; do
+		rm -rf $(find feeds/luci/ feeds/packages/ package/ -maxdepth 3 -type d -iname "*$NAME*" -prune)
+	done
+
+	# 克隆仓库
+	if [[ $PKG_REPO == http* ]]; then
+		local REPO_NAME=$(echo $PKG_REPO | awk -F '/' '{gsub(/\.git$/, "", $NF); print $NF}')
+		git clone --depth=1 --single-branch --branch $PKG_BRANCH "$PKG_REPO" package/$REPO_NAME
+	else
+		local REPO_NAME=$(echo $PKG_REPO | cut -d '/' -f 2)
+		git clone --depth=1 --single-branch --branch $PKG_BRANCH "https://github.com/$PKG_REPO.git" package/$REPO_NAME
+	fi
+
+	# 根据 PKG_SPECIAL 处理包
+	case "$PKG_SPECIAL" in
+		"pkg")
+			# 提取每个包
+			for NAME in "${PKG_NAMES[@]}"; do
+				cp -rf $(find ./package/$REPO_NAME/*/ -maxdepth 3 -type d -iname "*$NAME*" -prune) ./package/
+			done
+			# 删除剩余的包
+			rm -rf ./package/$REPO_NAME/
+			;;
+		"name")
+			# 重命名包
+			mv -f ./package/$REPO_NAME ./package/$PKG_NAME
+			;;
+	esac
+}
+
+UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "master"
+UPDATE_PACKAGE "luci-app-tailscale" "asvow/luci-app-tailscale" "main"
+UPDATE_PACKAGE "openwrt-gecoosac" "lwb1978/openwrt-gecoosac" "main"
+#UPDATE_PACKAGE "luci-app-homeproxy" "immortalwrt/homeproxy" "master"
+UPDATE_PACKAGE "luci-app-ddns-go" "sirpdboy/luci-app-ddns-go" "main"
+#UPDATE_PACKAGE "luci-app-alist" "sbwml/luci-app-alist" "main"
+UPDATE_PACKAGE "luci-app-openlist" "sbwml/luci-app-openlist" "main"
+
+#small-package
+UPDATE_PACKAGE "xray-core xray-plugin dns2tcp dns2socks haproxy hysteria \
+        naiveproxy shadowsocks-rust v2ray-core v2ray-geodata v2ray-geoview v2ray-plugin \
+        tuic-client chinadns-ng ipt2socks tcping trojan-plus simple-obfs shadowsocksr-libev \
+        luci-app-passwall smartdns luci-app-smartdns v2dat mosdns luci-app-mosdns \
+        taskd luci-lib-xterm luci-lib-taskd luci-app-ssr-plus luci-app-passwall2 \
+        luci-app-store quickstart luci-app-quickstart luci-app-istorex luci-app-cloudflarespeedtest \
+        luci-theme-argon netdata luci-app-netdata lucky luci-app-lucky luci-app-openclash mihomo \
+        luci-app-nikki luci-app-vlmcsd vlmcsd" "kenzok8/small-package" "main" "pkg"
+
+#speedtest
+UPDATE_PACKAGE "luci-app-netspeedtest" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"
+UPDATE_PACKAGE "speedtest-cli" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"
+
+UPDATE_PACKAGE "luci-app-adguardhome" "https://github.com/ysuolmai/luci-app-adguardhome.git" "master"
+UPDATE_PACKAGE "luci-app-tailscale" "asvow/luci-app-tailscale" "main"
+
+UPDATE_PACKAGE "openwrt-podman" "https://github.com/breeze303/openwrt-podman" "main"
+UPDATE_PACKAGE "luci-app-quickfile" "https://github.com/sbwml/luci-app-quickfile" "main"
+sed -i 's|$(INSTALL_BIN) $(PKG_BUILD_DIR)/quickfile-$(ARCH_PACKAGES) $(1)/usr/bin/quickfile|$(INSTALL_BIN) $(PKG_BUILD_DIR)/quickfile-aarch64_generic $(1)/usr/bin/quickfile|' package/luci-app-quickfile/quickfile/Makefile
+
+
+rm -rf $(find feeds/luci/ feeds/packages/ -maxdepth 3 -type d -iname luci-app-diskman -prune)
+#rm -rf $(find feeds/luci/ feeds/packages/ -maxdepth 3 -type d -iname parted -prune)
+mkdir -p luci-app-diskman && \
+wget https://raw.githubusercontent.com/lisaac/luci-app-diskman/master/applications/luci-app-diskman/Makefile -O luci-app-diskman/Makefile
+#mkdir -p parted && \
+#wget https://raw.githubusercontent.com/lisaac/luci-app-diskman/master/Parted.Makefile -O parted/Makefile
+
+keywords_to_delete=(
+    "xiaomi_ax3600" "xiaomi_ax9000" "xiaomi_ax1800" "glinet" "jdcloud_ax6600" "linksys" "link_nn6600" "kucat" "re-cs-02"
+    "mr7350" "uugamebooster" "luci-app-wol" "luci-i18n-wol-zh-cn" "CONFIG_TARGET_INITRAMFS" "ddns" "luci-app-advancedplus" "mihomo" "nikki"
+    "smartdns" "kucat" "bootstrap" "material"
+)
+
+for keyword in "${keywords_to_delete[@]}"; do
+    sed -i "/$keyword/d" ./.config
+done
+
+sed -i '/apk/I s/=y$/=n/' .config
+
+# Configuration lines to append to .config
+provided_config_lines=(
+    "CONFIG_PACKAGE_luci-app-zerotier=y"
+    "CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-adguardhome=y"
+    "CONFIG_PACKAGE_luci-i18n-adguardhome-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-poweroff=y"
+    "CONFIG_PACKAGE_luci-i18n-poweroff-zh-cn=y"
+    "CONFIG_PACKAGE_cpufreq=y"
+    "CONFIG_PACKAGE_luci-app-cpufreq=y"
+    "CONFIG_PACKAGE_luci-i18n-cpufreq-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-ttyd=y"
+    "CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn=y"
+    "CONFIG_PACKAGE_ttyd=y"
+    #"CONFIG_PACKAGE_luci-app-homeproxy=y"
+    #"CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-ddns-go=y"
+    "CONFIG_PACKAGE_luci-i18n-ddns-go-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-argon-config=y"
+    "CONFIG_PACKAGE_nano=y"
+    "CONFIG_BUSYBOX_CONFIG_LSUSB=n"
+    "CONFIG_PACKAGE_luci-app-netspeedtest=y"
+    "CONFIG_PACKAGE_luci-app-vlmcsd=y"
+    "CONFIG_COREMARK_OPTIMIZE_O3=y"
+    "CONFIG_COREMARK_ENABLE_MULTITHREADING=y"
+    "CONFIG_COREMARK_NUMBER_OF_THREADS=6"
+    #"CONFIG_PACKAGE_luci-theme-design=y"
+    "CONFIG_PACKAGE_luci-app-filetransfer=y"
+    "CONFIG_PACKAGE_openssh-sftp-server=y"
+    "CONFIG_PACKAGE_luci-app-frpc=y" 
+    "CONFIG_OPKG_USE_CURL=y"
+    "CONFIG_PACKAGE_opkg=y"   
+    "CONFIG_USE_APK=n"
+    #"CONFIG_PACKAGE_luci-app-tailscale=y"
+    #"CONFIG_PACKAGE_luci-app-msd_lite=y"
+    #"CONFIG_PACKAGE_luci-app-lucky=y"
+    #"CONFIG_PACKAGE_luci-app-gecoosac=y"
+    "CONFIG_PACKAGE_luci-app-diskman=y"
+    "CONFIG_PACKAGE_luci-i18n-diskman-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-docker=m"
+    "CONFIG_PACKAGE_luci-i18n-docker-zh-cn=m"
+    "CONFIG_PACKAGE_luci-app-dockerman=m"
+    "CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=m"
+    "CONFIG_PACKAGE_luci-app-openlist=y"
+    "CONFIG_PACKAGE_luci-i18n-openlist-zh-cn=y"
+    "CONFIG_PACKAGE_fdisk=y"
+    "CONFIG_PACKAGE_parted=y"
+    "CONFIG_PACKAGE_iptables-mod-extra=y"
+    "CONFIG_PACKAGE_ip6tables-nft=y"
+    "CONFIG_PACKAGE_ip6tables-mod-fullconenat=y"
+    "CONFIG_PACKAGE_iptables-mod-fullconenat=y"
+    "CONFIG_PACKAGE_libip4tc=y"
+    "CONFIG_PACKAGE_libip6tc=y"
+    "CONFIG_PACKAGE_luci-app-passwall=y"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Libev_Client=n"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Libev_Server=n"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=n"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Libev_Client=n"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Simple_Obfs=n"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox=n"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Trojan_Plus=n"
+    "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Plugin=n"
+    "CONFIG_PACKAGE_htop=y"
+    "CONFIG_PACKAGE_fuse-utils=y"
+    "CONFIG_PACKAGE_tcpdump=y"
+    "CONFIG_PACKAGE_sgdisk=y"
+    "CONFIG_PACKAGE_openssl-util=y"
+    "CONFIG_PACKAGE_resize2fs=y"
+    "CONFIG_PACKAGE_qrencode=y"
+    "CONFIG_PACKAGE_smartmontools-drivedb=y"
+    "CONFIG_PACKAGE_usbutils=y"
+    "CONFIG_PACKAGE_default-settings=y"
+    "CONFIG_PACKAGE_default-settings-chn=y"
+    "CONFIG_PACKAGE_iptables-mod-conntrack-extra=y"
+    "CONFIG_PACKAGE_kmod-br-netfilter=y"
+    "CONFIG_PACKAGE_kmod-ip6tables=y"
+    "CONFIG_PACKAGE_kmod-ipt-conntrack=y"
+    "CONFIG_PACKAGE_kmod-ipt-extra=y"
+    "CONFIG_PACKAGE_kmod-ipt-nat=y"
+    "CONFIG_PACKAGE_kmod-ipt-nat6=y"
+    "CONFIG_PACKAGE_kmod-ipt-physdev=y"
+    "CONFIG_PACKAGE_kmod-nf-ipt6=y"
+    "CONFIG_PACKAGE_kmod-nf-ipvs=y"
+    "CONFIG_PACKAGE_kmod-nf-nat6=y"
+    "CONFIG_PACKAGE_kmod-dummy=y"
+    "CONFIG_PACKAGE_kmod-veth=y"
+    "CONFIG_PACKAGE_automount=y"
+    "CONFIG_PACKAGE_luci-app-frps=y"
+    "CONFIG_PACKAGE_luci-app-ssr-plus=y"
+    "CONFIG_PACKAGE_luci-app-passwall2=y"
+    "CONFIG_PACKAGE_luci-app-samba4=y"
+    "CONFIG_PACKAGE_luci-app-openclash=y"
+    #"CONFIG_PACKAGE_luci-app-podman=y"
+    #"CONFIG_PACKAGE_podman=y"
+    "CONFIG_PACKAGE_luci-app-quickfile=y"
+)
+
+# Append configuration lines to .config
+for line in "${provided_config_lines[@]}"; do
+    echo "$line" >> .config
+done
+
+sed -i "s/luci-theme-[^[:space:]]*/luci-theme-argon/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
+find ./feeds/luci/ -type f -name "Makefile" -exec sed -i "s/luci-theme-[^[:space:]]*/luci-theme-argon/g" {} \;
+
+find ./ -name "cascade.css" -exec sed -i 's/#5e72e4/#31A1A1/g; s/#483d8b/#31A1A1/g' {} \;
+find ./ -name "dark.css" -exec sed -i 's/#5e72e4/#31A1A1/g; s/#483d8b/#31A1A1/g' {} \;
+
+#修改ttyd为免密
+install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_ttyd-nopass.sh" "package/base-files/files/etc/uci-defaults/99_ttyd-nopass"
+install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_set_argon_primary.sh" "package/base-files/files/etc/uci-defaults/99_set_argon_primary"
+install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99-distfeeds.conf" "package/emortal/default-settings/files/99-distfeeds.conf"
+
+sed -i "/define Package\/default-settings\/install/a\\
+\\t\$(INSTALL_DIR) \$(1)/etc\\n\
+\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" "package/emortal/default-settings/Makefile"
+
+sed -i "/exit 0/i\\
+[ -f \'/etc/99-distfeeds.conf\' ] && mv \'/etc/99-distfeeds.conf\' \'/etc/opkg/distfeeds.conf\'\n\
+sed -ri \'/check_signature/s@^[^#]@#&@\' /etc/opkg.conf\n" "package/emortal/default-settings/files/99-default-settings"
+
+
+#解决 dropbear 配置的 bug
+install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_dropbear_setup.sh" "package/base-files/files/etc/uci-defaults/99_dropbear_setup"
+
+#解决 nginx 的问题
+install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_nginx_setup.sh" "package/base-files/files/etc/uci-defaults/99_nginx_setup"
+
+
+
+find ./ -name "getifaddr.c" -exec sed -i 's/return 1;/return 0;/g' {} \;
+
+#fix makefile for apk
+if [ -f ./package/v2ray-geodata/Makefile ]; then
+    sed -i 's/VER)-\$(PKG_RELEASE)/VER)-r\$(PKG_RELEASE)/g' ./package/v2ray-geodata/Makefile
+fi
+if [ -f ./package/luci-lib-taskd/Makefile ]; then
+    sed -i 's/>=1\.0\.3-1/>=1\.0\.3-r1/g' ./package/luci-lib-taskd/Makefile
+fi
+if [ -f ./package/luci-app-openclash/Makefile ]; then
+    sed -i '/^PKG_VERSION:=/a PKG_RELEASE:=1' ./package/luci-app-openclash/Makefile
+fi
+if [ -f ./package/luci-app-quickstart/Makefile ]; then
+    # 把 PKG_VERSION:=x.y.z-n 拆成 PKG_VERSION:=x.y.z 和 PKG_RELEASE:=n
+    sed -i -E 's/PKG_VERSION:=([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)/PKG_VERSION:=\1\nPKG_RELEASE:=\2/' ./package/luci-app-quickstart/Makefile
+fi
+if [ -f ./package/luci-app-store/Makefile ]; then
+    # 把 PKG_VERSION:=x.y.z-n 拆成 PKG_VERSION:=x.y.z 和 PKG_RELEASE:=n
+    sed -i -E 's/PKG_VERSION:=([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)/PKG_VERSION:=\1\nPKG_RELEASE:=\2/' ./package/luci-app-store/Makefile
+fi
+
+
+if [ -d "package/vlmcsd" ]; then
+    dir="${GITHUB_WORKSPACE}/feeds/packages/net/vlmcsd"
+    patch_src="${GITHUB_WORKSPACE}/diypatch/001-fix_compile_with_ccache.patch"
+    patch_dest="$dir/patches"
+
+    if [ -d "$dir" ]; then
+        mkdir -p "$patch_dest"
+        cp -f "$patch_src" "$patch_dest"
+    fi
+fi
+
+if [ -d "package/luci-app-vlmcsd" ]; then
+    find package/luci-app-vlmcsd -type f \( -name '*.js' -o -name '*.lua' -o -name '*.htm' \) -exec sed -i 's#/etc/vlmcsd.ini#/etc/vlmcsd/vlmcsd.ini#g' {} +
+fi
+
+
+
+#fix gentext
+    gettext_makefile_path="./package/libs/gettext-full/Makefile"
+    bison_makefile_path="./tools/bison/Makefile"
+
+    # 检查 gettext-full 的 Makefile 是否存在并且版本是否为 0.24.1
+    if [ -f "$gettext_makefile_path" ] && grep -q "PKG_VERSION:=0.24.1" "$gettext_makefile_path"; then
+        echo "检测到 gettext 版本为 0.24.1，正在更新 Makefiles..."
+        # 从 OpenWrt 官方仓库下载最新的 Makefile
+        curl -L -o "$gettext_makefile_path" "https://raw.githubusercontent.com/openwrt/openwrt/refs/heads/main/package/libs/gettext-full/Makefile"
+        curl -L -o "$bison_makefile_path" "https://raw.githubusercontent.com/openwrt/openwrt/refs/heads/main/tools/bison/Makefile"
+
+
+        # https://raw.githubusercontent.com/openwrt/packages/a4ad26b53f772c20b796715aef7ff458b5350781/libs/rpcsvc-proto/patches/0001-po-update-for-gettext-0.22.patch
+        # 使用以上补丁修复rpcsvc-proto编译错误
+        rpcsvc_proto_dir="./feeds/packages/libs/rpcsvc-proto"
+        if [ -d "$rpcsvc_proto_dir" ]; then
+            patches_dir="$rpcsvc_proto_dir/patches"
+            patch_name="0001-po-update-for-gettext-0.22.patch"
+            patch_url="https://raw.githubusercontent.com/openwrt/packages/a4ad26b53f772c20b796715aef7ff458b5350781/libs/rpcsvc-proto/patches/$patch_name"
+            echo "正在为 rpcsvc-proto 添加 gettext 修复补丁..."
+            mkdir -p "$patches_dir"
+            curl -L -o "$patches_dir/$patch_name" "$patch_url"
+        fi
+    fi
