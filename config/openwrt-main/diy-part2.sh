@@ -285,7 +285,10 @@ if [ -d "package/luci-app-vlmcsd" ]; then
     find package/luci-app-vlmcsd -type f \( -name '*.js' -o -name '*.lua' -o -name '*.htm' \) -exec sed -i 's#/etc/vlmcsd.ini#/etc/vlmcsd/vlmcsd.ini#g' {} +
 fi
 
-
+#fix rust
+if [ -f "feeds/packages/lang/rust/Makefile" ]; then
+	sed -i 's/download-ci-llvm=true/download-ci-llvm=false/g' "$BUILD_DIR/feeds/packages/lang/rust/Makefile"
+fi
 
 #fix gentext
     gettext_makefile_path="./package/libs/gettext-full/Makefile"
@@ -311,3 +314,4 @@ fi
             curl -L -o "$patches_dir/$patch_name" "$patch_url"
         fi
     fi
+
