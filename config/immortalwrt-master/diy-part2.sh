@@ -75,7 +75,7 @@ UPDATE_PACKAGE() {
 UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "master"
 UPDATE_PACKAGE "luci-app-tailscale" "asvow/luci-app-tailscale" "main"
 UPDATE_PACKAGE "openwrt-gecoosac" "lwb1978/openwrt-gecoosac" "main"
-#UPDATE_PACKAGE "luci-app-homeproxy" "immortalwrt/homeproxy" "master"
+UPDATE_PACKAGE "luci-app-homeproxy" "immortalwrt/homeproxy" "master"
 UPDATE_PACKAGE "luci-app-ddns-go" "sirpdboy/luci-app-ddns-go" "main"
 #UPDATE_PACKAGE "luci-app-alist" "sbwml/luci-app-alist" "main"
 UPDATE_PACKAGE "luci-app-openlist" "sbwml/luci-app-openlist" "main"
@@ -135,8 +135,8 @@ provided_config_lines=(
     "CONFIG_PACKAGE_luci-app-ttyd=y"
     "CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn=y"
     "CONFIG_PACKAGE_ttyd=y"
-    #"CONFIG_PACKAGE_luci-app-homeproxy=y"
-    #"CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-homeproxy=y"
+    "CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
     "CONFIG_PACKAGE_luci-app-ddns-go=y"
     "CONFIG_PACKAGE_luci-i18n-ddns-go-zh-cn=y"
     "CONFIG_PACKAGE_luci-app-argon-config=y"
@@ -215,7 +215,7 @@ provided_config_lines=(
     "CONFIG_PACKAGE_luci-app-openclash=y"
     #"CONFIG_PACKAGE_luci-app-podman=y"
     #"CONFIG_PACKAGE_podman=y"
-    "CONFIG_PACKAGE_luci-app-quickfile=y"
+    #"CONFIG_PACKAGE_luci-app-quickfile=y"
 )
 
 # Append configuration lines to .config
@@ -247,7 +247,7 @@ sed -ri \'/check_signature/s@^[^#]@#&@\' /etc/opkg.conf\n" "package/emortal/defa
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_dropbear_setup.sh" "package/base-files/files/etc/uci-defaults/99_dropbear_setup"
 
 #解决 nginx 的问题
-install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_nginx_setup.sh" "package/base-files/files/etc/uci-defaults/99_nginx_setup"
+#install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_nginx_setup.sh" "package/base-files/files/etc/uci-defaults/99_nginx_setup"
 
 
 
