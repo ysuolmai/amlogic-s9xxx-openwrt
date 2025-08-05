@@ -77,8 +77,7 @@ UPDATE_PACKAGE "luci-app-tailscale" "asvow/luci-app-tailscale" "main"
 UPDATE_PACKAGE "openwrt-gecoosac" "lwb1978/openwrt-gecoosac" "main"
 UPDATE_PACKAGE "luci-app-homeproxy" "immortalwrt/homeproxy" "master"
 UPDATE_PACKAGE "luci-app-ddns-go" "sirpdboy/luci-app-ddns-go" "main"
-#UPDATE_PACKAGE "luci-app-alist" "sbwml/luci-app-alist" "main"
-UPDATE_PACKAGE "luci-app-openlist" "sbwml/luci-app-openlist" "main"
+UPDATE_PACKAGE "luci-app-openlist2" "sbwml/luci-app-openlist2" "main"
 
 #small-package
 UPDATE_PACKAGE "xray-core xray-plugin dns2tcp dns2socks haproxy hysteria \
@@ -160,12 +159,12 @@ provided_config_lines=(
     #"CONFIG_PACKAGE_luci-app-gecoosac=y"
     "CONFIG_PACKAGE_luci-app-diskman=y"
     "CONFIG_PACKAGE_luci-i18n-diskman-zh-cn=y"
-    "CONFIG_PACKAGE_luci-app-docker=m"
-    "CONFIG_PACKAGE_luci-i18n-docker-zh-cn=m"
-    "CONFIG_PACKAGE_luci-app-dockerman=m"
-    "CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=m"
-    "CONFIG_PACKAGE_luci-app-openlist=y"
-    "CONFIG_PACKAGE_luci-i18n-openlist-zh-cn=y"
+    #"CONFIG_PACKAGE_luci-app-docker=m"
+    #"CONFIG_PACKAGE_luci-i18n-docker-zh-cn=m"
+    #"CONFIG_PACKAGE_luci-app-dockerman=m"
+    #"CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=m"
+    "CONFIG_PACKAGE_luci-app-openlist2=y"
+    "CONFIG_PACKAGE_luci-i18n-openlist2-zh-cn=y"
     "CONFIG_PACKAGE_fdisk=y"
     "CONFIG_PACKAGE_parted=y"
     "CONFIG_PACKAGE_iptables-mod-extra=y"
@@ -213,8 +212,8 @@ provided_config_lines=(
     "CONFIG_PACKAGE_luci-app-passwall2=y"
     "CONFIG_PACKAGE_luci-app-samba4=y"
     "CONFIG_PACKAGE_luci-app-openclash=y"
-    #"CONFIG_PACKAGE_luci-app-podman=y"
-    #"CONFIG_PACKAGE_podman=y"
+    "CONFIG_PACKAGE_luci-app-podman=m"
+    "CONFIG_PACKAGE_podman=m"
     #"CONFIG_PACKAGE_luci-app-quickfile=y"
 )
 
@@ -288,6 +287,41 @@ if [ -d "package/luci-app-vlmcsd" ]; then
     find package/luci-app-vlmcsd -type f \( -name '*.js' -o -name '*.lua' -o -name '*.htm' \) -exec sed -i 's#/etc/vlmcsd.ini#/etc/vlmcsd/vlmcsd.ini#g' {} +
 fi
 
+
+#update golang
+GOLANG_REPO="https://github.com/sbwml/packages_lang_golang"
+GOLANG_BRANCH="24.x"
+if [[ -d ./feeds/packages/lang/golang ]]; then
+	\rm -rf ./feeds/packages/lang/golang
+	git clone $GOLANG_REPO -b $GOLANG_BRANCH ./feeds/packages/lang/golang
+fi
+
+
+#解决libsodium 编译问题
+
+# Define the target Makefile
+MAKEFILE="feeds/packages/libs/libsodium/Makefile"
+
+# Check if the Makefile exists
+if [ ! -f "$MAKEFILE" ]; then
+  echo "Error: $MAKEFILE not found"
+  exit 1
+fi
+
+# Remove any existing CFLAGS += -std=c11 to clean up previous errors
+sed -i '/CFLAGS += -std=c11/d' "$MAKEFILE"
+
+# Update version information
+sed -i 's/PKG_VERSION:=.*/PKG_VERSION:=1.0.20/' "$MAKEFILE"
+sed -i 's/PKG_SOURCE:=.*/PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz/' "$MAKEFILE"
+sed -i 's|PKG_SOURCE_URL:=.*|PKG_SOURCE_URL:=https://download.libsodium.org/libsodium/releases|' "$MAKEFILE"
+sed -i 's/PKG_HASH:=.*/PKG_HASH:=462f4f1d1d73e82d60c6cf5283cf3b366ae1a0fb17735199caac7bf560b3dc3b/' "$MAKEFILE"
+
+# Insert CFLAGS += -std=c11 after the exact line 'define Package/libsodium'
+if ! grep -q "CFLAGS += -std=c11" "$MAKEFILE"; then
+  sed -i '/^define Package\/libsodium$/a CFLAGS += -std=c11' "$MAKEFILE"
+fi
+echo "Successfully modified $MAKEFILE"
 
 
 #fix gentext
