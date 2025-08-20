@@ -212,8 +212,8 @@ provided_config_lines=(
     "CONFIG_PACKAGE_luci-app-passwall2=y"
     "CONFIG_PACKAGE_luci-app-samba4=y"
     "CONFIG_PACKAGE_luci-app-openclash=y"
-    "CONFIG_PACKAGE_luci-app-podman=m"
-    "CONFIG_PACKAGE_podman=m"
+    #"CONFIG_PACKAGE_luci-app-podman=m"
+    #"CONFIG_PACKAGE_podman=m"
     #"CONFIG_PACKAGE_luci-app-quickfile=y"
 )
 
