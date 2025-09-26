@@ -284,3 +284,15 @@ fi
 if [ -d "package/luci-app-vlmcsd" ]; then
     find package/luci-app-vlmcsd -type f \( -name '*.js' -o -name '*.lua' -o -name '*.htm' \) -exec sed -i 's#/etc/vlmcsd.ini#/etc/vlmcsd/vlmcsd.ini#g' {} +
 fi
+
+
+#修复 rust 编译
+RUST_FILE=$(find ./feeds/packages/ -maxdepth 3 -type f -wholename "*/rust/Makefile")
+if [ -f "$RUST_FILE" ]; then
+	echo " "
+
+	sed -i 's/ci-llvm=true/ci-llvm=false/g' $RUST_FILE
+	patch $RUST_FILE ${GITHUB_WORKSPACE}/scripts/rust-makefile.patch
+
+	cd $PKG_PATH && echo "rust has been fixed!"
+fi
