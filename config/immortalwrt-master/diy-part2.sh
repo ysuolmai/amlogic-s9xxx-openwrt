@@ -292,7 +292,7 @@ if [ -f "$RUST_FILE" ]; then
 	echo " "
 
 	sed -i 's/ci-llvm=true/ci-llvm=false/g' $RUST_FILE
-	patch $RUST_FILE ${GITHUB_WORKSPACE}/scripts/rust-makefile.patch
+	patch $RUST_FILE ${GITHUB_WORKSPACE}/diypatch/rust-makefile.patch
 
 	cd $PKG_PATH && echo "rust has been fixed!"
 fi
