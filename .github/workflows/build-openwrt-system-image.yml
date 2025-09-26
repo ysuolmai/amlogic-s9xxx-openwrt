@@ -176,6 +176,7 @@ on:
           - tqc-a01
           - tvi3315a
           - vplus
+          - wocyber-a3
           - wxy-oect
           - wxy-oect-replaced
           - xiaobao
@@ -245,7 +246,7 @@ env:
   CONFIG_FILE: config/${{ inputs.source_branch }}/config
   DIY_P1_SH: config/${{ inputs.source_branch }}/diy-part1.sh
   DIY_P2_SH: config/${{ inputs.source_branch }}/diy-part2.sh
-  TZ: America/New_York
+  TZ: Etc/UTC
 
 jobs:
   build:
@@ -275,7 +276,9 @@ jobs:
           sudo -E apt-get clean
           sudo sed -i '/NVM_DIR/d;/skel/d' /root/{.bashrc,.profile}
           sudo rm -rf ~/{.cargo,.dotnet,.rustup}
-          sudo timedatectl set-timezone "${TZ}"
+          sudo -E timedatectl set-timezone "${TZ}"
+          sudo -E apt-get install -y ntpdate
+          sudo -E ntpdate pool.ntp.org
           echo "status=success" >> ${GITHUB_OUTPUT}
 
       - name: Create simulated physical disk
