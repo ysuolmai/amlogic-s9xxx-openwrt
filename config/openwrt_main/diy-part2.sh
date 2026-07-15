@@ -119,6 +119,55 @@ UPDATE_PACKAGE "xray-core dns2socks geoview chinadns-ng ipt2socks tcping frp \
         luci-app-passwall \
         luci-app-vlmcsd vlmcsd" "kenzok8/jell" "main" "pkg"
 
+# vlmcsd-svn1113's GNUmakefile conflicts with OpenWrt's ccache compiler wrapper:
+# it can pass multiple sources to one "-c -o" command. Use the real compiler
+# and serialize this package, matching the fix maintained in openwrt-ci2.
+VLMCSD_MK="$(find package/ -path "*/vlmcsd/Makefile" | head -n 1)"
+if [[ -f "$VLMCSD_MK" ]]; then
+    echo ">>> Patching vlmcsd build: $VLMCSD_MK"
+    python3 - "$VLMCSD_MK" <<'PYEOF'
+import re
+import sys
+
+mk_path = sys.argv[1]
+with open(mk_path, encoding="utf-8") as makefile:
+    content = makefile.read()
+
+content = re.sub(r'\ndefine Build/Compile\n.*?endef\n', '\n', content, flags=re.DOTALL)
+new_compile = r'''
+define Build/Compile
+	$(MAKE) -j1 -C $(PKG_BUILD_DIR) \
+		CC="$(TARGET_CC_NOCACHE)" \
+		CXX="$(TARGET_CXX_NOCACHE)" \
+		AR="$(TARGET_AR)" \
+		RANLIB="$(TARGET_RANLIB)" \
+		STRIP="$(STRIP)" \
+		AS="$(TARGET_CROSS)as" \
+		LD="$(TARGET_LD)" \
+		CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
+		LDFLAGS="$(TARGET_LDFLAGS)" \
+		CROSS="$(TARGET_CROSS)" \
+		ARCH="$(ARCH)" \
+		-e
+endef
+'''
+content, replacements = re.subn(
+    r'(\$\(eval\s+\$\(call\s+BuildPackage)',
+    new_compile + r'\1',
+    content,
+    count=1,
+)
+if replacements != 1:
+    raise SystemExit("Could not locate vlmcsd BuildPackage declaration")
+
+with open(mk_path, "w", encoding="utf-8") as makefile:
+    makefile.write(content)
+print(f">>> Patched OK: {mk_path}")
+PYEOF
+else
+    echo "Error: vlmcsd Makefile not found after package update."
+    exit 1
+fi
 # tcping's upstream Makefile otherwise uses the x86_64 host strip on AArch64 output.
 sed -i 's/CC="$(TARGET_CC)" CFLAGS=/CC="$(TARGET_CC)" STRIP="$(TARGET_CROSS)strip" CFLAGS=/' package/tcping/Makefile
 
@@ -145,6 +194,15 @@ UPDATE_PACKAGE "luci-app-netspeedtest speedtest-cli" "sbwml/openwrt_pkgs" "main"
 UPDATE_PACKAGE "luci-app-adguardhome" "https://github.com/ysuolmai/luci-app-adguardhome.git" "master"
 UPDATE_PACKAGE "luci-app-quickfile" "https://github.com/sbwml/luci-app-quickfile" "main"
 UPDATE_PACKAGE "luci-app-diskman" "lisaac/luci-app-diskman" "master" "pkg"
+# Keep diskman's frontend and parted backend aligned with the maintained source.
+find feeds/luci feeds/packages package -maxdepth 4 -type d -name parted -prune -exec rm -rf {} + 2>/dev/null || true
+mkdir -p package/parted
+curl -fsSL https://raw.githubusercontent.com/lisaac/luci-app-diskman/master/Parted.Makefile \
+    -o package/parted/Makefile || {
+    echo "Error: failed to download diskman's Parted.Makefile."
+    exit 1
+}
+sed -i 's/fs-ntfs /fs-ntfs3 /g; /ntfs-3g-utils /d' package/luci-app-diskman/Makefile
 
 keywords_to_delete=(
     "uugamebooster" "luci-app-wol" "luci-i18n-wol-zh-cn"
@@ -201,10 +259,13 @@ provided_config_lines=(
     "# CONFIG_USE_APK is not set"
     "CONFIG_PACKAGE_luci-app-diskman=y"
     "CONFIG_PACKAGE_luci-i18n-diskman-zh-cn=y"
-    "CONFIG_PACKAGE_luci-app-docker=m"
-    "CONFIG_PACKAGE_luci-i18n-docker-zh-cn=m"
-    "CONFIG_PACKAGE_luci-app-dockerman=m"
-    "CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=m"
+    "CONFIG_PACKAGE_docker=y"
+    "CONFIG_PACKAGE_dockerd=y"
+    "CONFIG_PACKAGE_docker-compose=y"
+    "CONFIG_PACKAGE_luci-app-docker=y"
+    "CONFIG_PACKAGE_luci-i18n-docker-zh-cn=y"
+    "CONFIG_PACKAGE_luci-app-dockerman=y"
+    "CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=y"
     "CONFIG_PACKAGE_luci-app-openlist2=y"
     "CONFIG_PACKAGE_luci-i18n-openlist2-zh-cn=y"
     "CONFIG_PACKAGE_fdisk=y"
@@ -264,3 +325,100 @@ find ./feeds/luci/ -type f -name "Makefile" -exec sed -i "s/luci-theme-[^[:space
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_ttyd-nopass.sh" "package/base-files/files/etc/uci-defaults/99_ttyd-nopass"
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_set_shadcn_theme.sh" "package/base-files/files/etc/uci-defaults/99_set_shadcn_theme"
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_dropbear_setup.sh" "package/base-files/files/etc/uci-defaults/99_dropbear_setup"
+# Keep the helper behavior and default shell profile compatible with minimal
+# images that do not ship zsh.
+find . -name getifaddr.c -exec sed -i 's/return 1;/return 0;/g' {} +
+sed -i '/\/usr\/bin\/zsh/d' package/base-files/files/etc/profile
+
+# Normalize package versions for APK-style dependency parsing when these
+# optional packages are present in the selected third-party package set.
+if [[ -f package/v2ray-geodata/Makefile ]]; then
+    sed -i 's/VER)-\$(PKG_RELEASE)/VER)-r\$(PKG_RELEASE)/g' package/v2ray-geodata/Makefile
+fi
+if [[ -f package/luci-lib-taskd/Makefile ]]; then
+    sed -i 's/>=1\.0\.3-1/>=1\.0\.3-r1/g' package/luci-lib-taskd/Makefile
+fi
+if [[ -f package/luci-app-openclash/Makefile ]] && ! grep -q '^PKG_RELEASE:=' package/luci-app-openclash/Makefile; then
+    sed -i '/^PKG_VERSION:=/a PKG_RELEASE:=1' package/luci-app-openclash/Makefile
+fi
+for makefile in package/luci-app-quickstart/Makefile package/luci-app-store/Makefile; do
+    [[ -f "$makefile" ]] || continue
+    sed -i -E 's/PKG_VERSION:=([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)/PKG_VERSION:=\1\nPKG_RELEASE:=\2/' "$makefile"
+done
+
+# Replace ddns-go's incomplete service defaults with the known-good OpenWRT-CI
+# files so the daemon and LuCI use the same UCI section and config path.
+if [[ -d package/ddns-go/file ]]; then
+    install -Dm755 "${GITHUB_WORKSPACE}/diypatch/ddns-go.init" \
+        package/ddns-go/file/ddns-go.init
+    install -Dm755 "${GITHUB_WORKSPACE}/diypatch/ddns-go.uci-default" \
+        package/ddns-go/file/luci-ddns-go.uci-default
+    install -Dm644 "${GITHUB_WORKSPACE}/diypatch/ddns-go.config" \
+        package/base-files/files/etc/config/ddns-go
+fi
+
+# Old CMake projects need an explicit compatibility floor with current CMake.
+if ! grep -q 'CMAKE_POLICY_VERSION_MINIMUM' include/cmake.mk; then
+    echo 'CMAKE_OPTIONS += -DCMAKE_POLICY_VERSION_MINIMUM=3.5' >> include/cmake.mk
+fi
+
+# Restore OpenWrt's host patch phase and avoid Rust's incompatible CI mode.
+RUST_FILE="$(find feeds/packages -maxdepth 3 -type f -wholename '*/rust/Makefile' | head -n 1)"
+if [[ -f "$RUST_FILE" ]]; then
+    sed -i 's/ci-llvm=true/ci-llvm=false/g' "$RUST_FILE"
+    patch "$RUST_FILE" "${GITHUB_WORKSPACE}/diypatch/rust-makefile.patch" || {
+        echo "Error: failed to apply the Rust host-build patch."
+        exit 1
+    }
+fi
+
+# Use dockerman and luci-lib-docker from their maintained repositories and
+# remove the obsolete cgroupfs-mount dependency.
+rm -rf package/feeds/luci/luci-app-dockerman package/feeds/luci/luci-lib-docker \
+    package/luci-app-dockerman package/luci-lib-docker
+git clone --depth=1 https://github.com/lisaac/luci-app-dockerman.git package/.diy-dockerman || exit 1
+mv package/.diy-dockerman/applications/luci-app-dockerman package/luci-app-dockerman || exit 1
+rm -rf package/.diy-dockerman
+git clone --depth=1 https://github.com/lisaac/luci-lib-docker.git package/.diy-libdocker || exit 1
+if [[ -d package/.diy-libdocker/collections/luci-lib-docker ]]; then
+    mv package/.diy-libdocker/collections/luci-lib-docker package/luci-lib-docker || exit 1
+else
+    mv package/.diy-libdocker package/luci-lib-docker || exit 1
+fi
+rm -rf package/.diy-libdocker
+sed -i 's/+cgroupfs-mount //g; s/+cgroupfs-mount//g' package/luci-app-dockerman/Makefile
+./scripts/feeds install luci-lib-docker || exit 1
+
+# The feed recipes can lag Docker's retagged release sources. Resolve the
+# current matching engine/CLI commits and bypass their stale vendoring hashes.
+MOBY_TAG="$(curl -fsSL https://api.github.com/repos/moby/moby/releases/latest | jq -r '.tag_name // empty')"
+DOCKER_VER="$(echo "$MOBY_TAG" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+if [[ -n "$DOCKER_VER" ]]; then
+    DOCKERD_COMMIT="$(curl -fsSL "https://api.github.com/repos/moby/moby/commits?sha=${MOBY_TAG}&per_page=1" | jq -r '.[0].sha[0:7] // empty')"
+    DOCKER_CLI_COMMIT="$(curl -fsSL "https://api.github.com/repos/docker/cli/commits?sha=v${DOCKER_VER}&per_page=1" | jq -r '.[0].sha[0:7] // empty')"
+fi
+if [[ -z "$DOCKER_VER" || -z "$DOCKERD_COMMIT" || -z "$DOCKER_CLI_COMMIT" ]]; then
+    DOCKER_VER="29.5.2"
+    DOCKERD_COMMIT="568f755"
+    DOCKER_CLI_COMMIT="79eb04c"
+fi
+
+dockerd_makefile="$(find package feeds -name Makefile -exec grep -lE '^PKG_NAME:=dockerd$' {} + | head -n 1)"
+docker_makefile="$(find package feeds -name Makefile -exec grep -lE '^PKG_NAME:=docker$' {} + | head -n 1)"
+if [[ -f "$dockerd_makefile" ]]; then
+    sed -i \
+        -e "s/^PKG_VERSION:=.*/PKG_VERSION:=$DOCKER_VER/" \
+        -e "s/PKG_GIT_SHORT_COMMIT:=.*/PKG_GIT_SHORT_COMMIT:=$DOCKERD_COMMIT/g" \
+        -e 's/^PKG_HASH:=.*/PKG_HASH:=skip/' \
+        -e '/define Build\/Prepare/,/endef/c\define Build/Prepare\n\t$(Build/Prepare/Default)\nendef' \
+        -e 's/^\t$(call EnsureVendored/#\t$(call EnsureVendored/g' \
+        "$dockerd_makefile"
+fi
+if [[ -f "$docker_makefile" ]]; then
+    sed -i \
+        -e "s/^PKG_VERSION:=.*/PKG_VERSION:=$DOCKER_VER/" \
+        -e "s/PKG_GIT_SHORT_COMMIT:=.*/PKG_GIT_SHORT_COMMIT:=$DOCKER_CLI_COMMIT/g" \
+        -e 's/^PKG_HASH:=.*/PKG_HASH:=skip/' \
+        -e '/define Build\/Prepare/,/endef/c\define Build/Prepare\n\t$(Build/Prepare/Default)\nendef' \
+        "$docker_makefile"
+fi
