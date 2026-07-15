@@ -18,7 +18,6 @@ on:
         options:
           - all
           - openwrt_main
-          - lede_master
           - immortalwrt_master
       docker_img:
         description: "Set the docker image"
@@ -43,7 +42,7 @@ jobs:
         id: set-matrix
         run: |
           if [[ "${{ inputs.source_branch }}" == "all" ]]; then
-            MATRIX='{"include":[{"source_branch":"openwrt_main","docker_img":"ophub/openwrt-armv8"},{"source_branch":"lede_master","docker_img":"ophub/openwrt-aarch64"}]}'
+            MATRIX='{"include":[{"source_branch":"openwrt_main","docker_img":"ophub/openwrt-armv8"},{"source_branch":"immortalwrt_master","docker_img":"ophub/openwrt-aarch64"}]}'
           else
             MATRIX='{"include":[{"source_branch":"${{ inputs.source_branch }}","docker_img":"${{ inputs.docker_img }}"}]}'
           fi
@@ -71,8 +70,6 @@ jobs:
           # Determine the OpenWrt source code repository
           if [[ "${{ matrix.source_branch }}" =~ ^openwrt ]]; then
               REPO_URL="https://github.com/openwrt/openwrt"
-          elif [[ "${{ matrix.source_branch }}" =~ ^lede ]]; then
-              REPO_URL="https://github.com/coolsnowwolf/lede"
           elif [[ "${{ matrix.source_branch }}" =~ ^immortalwrt ]]; then
               REPO_URL="https://github.com/immortalwrt/immortalwrt"
           else

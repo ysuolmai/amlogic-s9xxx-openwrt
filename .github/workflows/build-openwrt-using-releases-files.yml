@@ -17,7 +17,6 @@ on:
         options:
           - all
           - openwrt_main
-          - lede_master
           - immortalwrt_master
       openwrt_board:
         description: "Select device board"
@@ -156,6 +155,7 @@ on:
           - s905l3-unt402a
           - s905l3a
           - s905l3a-cm311
+          - s905l3a-e900v22d
           - s905l3a-m401a
           - s905l3b
           - s905l3b-e900v21d
@@ -326,7 +326,7 @@ jobs:
         id: set-matrix
         run: |
           if [[ "${{ inputs.source_branch }}" == "all" ]]; then
-            MATRIX='{"include":[{"branch":"openwrt_main"},{"branch":"lede_master"},{"branch":"immortalwrt_master"}]}'
+            MATRIX='{"include":[{"branch":"openwrt_main"},{"branch":"immortalwrt_master"}]}'
           else
             MATRIX='{"include":[{"branch":"${{ inputs.source_branch }}"}]}'
           fi
@@ -402,8 +402,6 @@ jobs:
           # Determine the OpenWrt source code repository
           if [[ "${{ matrix.branch }}" =~ ^openwrt ]]; then
               REPO_URL="https://github.com/openwrt/openwrt"
-          elif [[ "${{ matrix.branch }}" =~ ^lede ]]; then
-              REPO_URL="https://github.com/coolsnowwolf/lede"
           elif [[ "${{ matrix.branch }}" =~ ^immortalwrt ]]; then
               REPO_URL="https://github.com/immortalwrt/immortalwrt"
           else
@@ -417,7 +415,6 @@ jobs:
           armsr_tarfile_path="openwrt/output"
           [[ -d "${armsr_tarfile_path}" ]] || mkdir -p ${armsr_tarfile_path}
           ln -sf /builder/openwrt ${{ github.workspace }}/openwrt
-          ln -sf /builder/openwrt /home/runner/work/_actions/ophub/amlogic-s9xxx-openwrt/main/openwrt
 
           # Query the latest release asset via GitHub API
           latest_version=$(curl -s \
@@ -460,7 +457,7 @@ jobs:
 
       - name: Package OpenWrt for target boards
         if: ${{ steps.down.outputs.status == 'success' && !cancelled() }}
-        uses: ophub/amlogic-s9xxx-openwrt@main
+        uses: ./
         with:
           openwrt_path: openwrt/output/*rootfs.tar.gz
           openwrt_ip: ${{ inputs.openwrt_ip }}

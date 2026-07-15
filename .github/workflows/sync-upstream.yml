@@ -1,0 +1,173 @@
+#==========================================================================
+# https://github.com/ysuolmai/amlogic-s9xxx-openwrt
+# Description: Sync upstream and re-apply local custom files
+#==========================================================================
+
+name: Sync upstream and keep custom changes
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_repository:
+        description: "Upstream repository, owner/name"
+        required: false
+        default: "ophub/amlogic-s9xxx-openwrt"
+      upstream_branch:
+        description: "Upstream branch"
+        required: false
+        default: "main"
+  schedule:
+    - cron: "0 18 * * 0"
+
+concurrency:
+  group: sync-upstream-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    if: ${{ github.event_name == 'schedule' || github.event.repository.owner.id == github.event.sender.id }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Sync upstream and restore protected paths
+        env:
+          UPSTREAM_REPOSITORY: ${{ github.event.inputs.upstream_repository }}
+          UPSTREAM_BRANCH: ${{ github.event.inputs.upstream_branch }}
+          KEEP_FILE: .github/upstream-sync-keep.txt
+        run: |
+          set -euo pipefail
+
+          UPSTREAM_REPOSITORY="${UPSTREAM_REPOSITORY:-ophub/amlogic-s9xxx-openwrt}"
+          UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-main}"
+          UPSTREAM_URL="https://github.com/${UPSTREAM_REPOSITORY}.git"
+          UPSTREAM_REF="refs/remotes/upstream/${UPSTREAM_BRANCH}"
+          BACKUP_DIR="$(mktemp -d)"
+
+          cleanup() {
+            rm -rf "${BACKUP_DIR}"
+          }
+          trap cleanup EXIT
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git remote get-url upstream >/dev/null 2>&1; then
+            git remote set-url upstream "${UPSTREAM_URL}"
+          else
+            git remote add upstream "${UPSTREAM_URL}"
+          fi
+
+          git fetch origin "${GITHUB_REF_NAME}" --prune
+          git fetch upstream "${UPSTREAM_BRANCH}:${UPSTREAM_REF}" --tags --prune
+
+          if [ -f "${KEEP_FILE}" ]; then
+            mapfile -t KEEP_PATHS < <(sed -e 's/\r$//' -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "${KEEP_FILE}")
+          else
+            mapfile -t KEEP_PATHS <<'EOF'
+          .github/upstream-sync-keep.txt
+          .github/workflows/sync-upstream.yml
+          config/immortalwrt_master/diy-part2.sh
+          config/lede_master/diy-part2.sh
+          config/openwrt_main/diy-part2.sh
+          diypatch
+          EOF
+          fi
+
+          is_protected_path() {
+            local path="$1"
+            local keep
+            for keep in "${KEEP_PATHS[@]}"; do
+              if [[ "${path}" == "${keep}" || "${path}" == "${keep}/"* ]]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          echo "Protected paths:"
+          printf '  %s\n' "${KEEP_PATHS[@]}"
+
+          for path in "${KEEP_PATHS[@]}"; do
+            if [ -e "${path}" ]; then
+              mkdir -p "${BACKUP_DIR}/$(dirname "${path}")"
+              cp -a "${path}" "${BACKUP_DIR}/${path}"
+            fi
+          done
+
+          before_head="$(git rev-parse --short HEAD)"
+          upstream_head="$(git rev-parse --short "${UPSTREAM_REF}")"
+          upstream_owner="${UPSTREAM_REPOSITORY%%/*}"
+
+          set +e
+          git merge --no-ff --no-commit -X theirs "${UPSTREAM_REF}"
+          merge_status=$?
+          set -e
+
+          if [ "${merge_status}" -ne 0 ]; then
+            echo "Merge reported conflicts. Resolving unprotected paths from upstream and restoring protected paths."
+            while IFS= read -r path; do
+              [ -n "${path}" ] || continue
+              if is_protected_path "${path}"; then
+                continue
+              fi
+
+              if git ls-files -u -- "${path}" | awk '{ if ($3 == 3) found=1 } END { exit found ? 0 : 1 }'; then
+                git checkout --theirs -- "${path}" 2>/dev/null || true
+                git add -A -- "${path}"
+              else
+                git rm -f -- "${path}" 2>/dev/null || git add -u -- "${path}"
+              fi
+            done < <(git diff --name-only --diff-filter=U)
+          fi
+
+          for path in "${KEEP_PATHS[@]}"; do
+            if [ -e "${BACKUP_DIR}/${path}" ]; then
+              rm -rf "${path}"
+              mkdir -p "$(dirname "${path}")"
+              cp -a "${BACKUP_DIR}/${path}" "${path}"
+              git add -A -- "${path}"
+            fi
+          done
+
+          if remaining_conflicts="$(git diff --name-only --diff-filter=U)" && [ -n "${remaining_conflicts}" ]; then
+            echo "Unresolved conflicts remain:"
+            echo "${remaining_conflicts}"
+            exit 1
+          fi
+
+          git add -A
+
+          if [ ! -f .git/MERGE_HEAD ] && git diff --cached --quiet && git diff --quiet; then
+            echo "Already up to date."
+            {
+              echo "### Upstream sync"
+              echo "- Result: already up to date"
+              echo "- Current head: ${before_head}"
+              echo "- Upstream head: ${upstream_head}"
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          git commit \
+            -m "Merge branch '${upstream_owner}:${UPSTREAM_BRANCH}' into ${GITHUB_REF_NAME}" \
+            -m "Sync ${UPSTREAM_REPOSITORY}@${UPSTREAM_BRANCH} and restore protected custom paths from ${KEEP_FILE}."
+
+          after_head="$(git rev-parse --short HEAD)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+          {
+            echo "### Upstream sync"
+            echo "- Before: ${before_head}"
+            echo "- Upstream: ${upstream_head}"
+            echo "- After: ${after_head}"
+            echo "- Protected paths:"
+            printf '  - `%s`\n' "${KEEP_PATHS[@]}"
+          } >> "${GITHUB_STEP_SUMMARY}"

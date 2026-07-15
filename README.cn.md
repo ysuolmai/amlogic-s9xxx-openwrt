@@ -17,6 +17,8 @@
 | 🛜 [OpenWrt.OS](https://github.com/ophub/amlogic-s9xxx-openwrt/releases) | root | password | 22 | 192.168.1.1 |
 | 🐋 [OpenWrt.Docker](https://hub.docker.com/u/ophub) | root | password | 22 | 192.168.1.1 |
 
+> 本 fork 包含仅针对 `S905L3A` 的板级 SDIO Wi-Fi 构建期修复。目前经过实机验证的 profile 包括 `M401A + RTL8822CS` 和 `SKYWORTH E900V22D/S905L3A + RTL8822CS`，详见 [s905l3a-wifi-fix](s905l3a-wifi-fix/README.md)。
+
 ## 支持的设备列表
 
 ⬆️ 各平台（晶晨/瑞芯微/全志）型号均按 SoC 性能由高至低排列。

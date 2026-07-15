@@ -1,3 +1,7 @@
+# 高质量<付费>中转站
+
+https://sc.350303.xyz/register?aff=C8X8NEL4BXX6
+
 <div align="center">
     <img src="https://github.com/user-attachments/assets/5fcf18e1-ed16-49d3-9004-5301ac8d4309" alt="OpenWrt" />
 </div>
@@ -16,6 +20,8 @@ This project, thanks to numerous [contributors](https://github.com/ophub/amlogic
 | -------------- | ---------------- | ----------------- | --------- | ----------- |
 | 🛜 [OpenWrt.OS](https://github.com/ophub/amlogic-s9xxx-openwrt/releases) | root | password | 22 | 192.168.1.1 |
 | 🐋 [OpenWrt.Docker](https://hub.docker.com/u/ophub) | root | password | 22 | 192.168.1.1 |
+
+> This fork includes a build-time, board-profiled SDIO Wi-Fi repair limited to `S905L3A`. Hardware-tested profiles cover `M401A + RTL8822CS` and `SKYWORTH E900V22D/S905L3A + RTL8822CS`; see [s905l3a-wifi-fix](s905l3a-wifi-fix/README.md).
 
 ## Supported Devices
 

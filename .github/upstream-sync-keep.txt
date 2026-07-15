@@ -1,0 +1,8 @@
+# Paths that must survive upstream sync.
+# Add one file or directory per line.
+.github/upstream-sync-keep.txt
+.github/workflows/sync-upstream.yml
+config/immortalwrt_master/diy-part2.sh
+config/lede_master/diy-part2.sh
+config/openwrt_main/diy-part2.sh
+diypatch

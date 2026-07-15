@@ -61,6 +61,7 @@ uboot_path="${resource_path}/u-boot"
 common_files="${resource_path}/openwrt-files/common-files"
 platform_files="${resource_path}/openwrt-files/platform-files"
 different_files="${resource_path}/openwrt-files/different-files"
+s905l3a_wifi_fix="${current_path}/s905l3a-wifi-fix"
 firmware_path="${common_files}/lib/firmware"
 model_conf="${common_files}/etc/model_database.conf"
 model_txt="${common_files}/etc/model_database.txt"
@@ -967,6 +968,9 @@ replace_kernel() {
     # 02. For /boot/dtb/${PLATFORM}/*
     [[ -d "${tag_bootfs}/dtb/${PLATFORM}" ]] || mkdir -p ${tag_bootfs}/dtb/${PLATFORM}
     tar -mxzf ${kernel_dtb} -C ${tag_bootfs}/dtb/${PLATFORM}
+    if [[ "${PLATFORM}" == "amlogic" && "${SOC}" == "s905l3a" ]]; then
+        "${s905l3a_wifi_fix}/bin/patch-image" "${SOC}" "${board}" "${tag_bootfs}" "${tag_rootfs}"
+    fi
     [[ "${PLATFORM}" == "rockchip" ]] && ln -sf dtb ${tag_bootfs}/dtb-${kernel_name}
     [[ "$(ls ${tag_bootfs}/dtb/${PLATFORM} -l 2>/dev/null | grep "^-" | wc -l)" -ge "2" ]] || error_msg "/boot/dtb/${PLATFORM} files is missing."
 

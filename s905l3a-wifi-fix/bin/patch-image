@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+[[ "$#" -eq 4 ]] || { echo "Usage: patch-image SOC BOARD BOOT_DIR ROOT_DIR" >&2; exit 2; }
+soc="$1"
+board="$2"
+boot_dir="$3"
+root_dir="$4"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+project_dir="$(cd -- "${script_dir}/.." && pwd)"
+
+patch_e900v22d_installer() {
+    local installer="${root_dir}/usr/sbin/openwrt-install-amlogic"
+    local old_condition='[[ "${boxtype}" == "304" || "${boxtype}" == "34" ]]'
+    local new_condition='[[ "${boxtype}" == "304" || "${boxtype}" == "308" || "${boxtype}" == "34" ]]'
+
+    [[ -r "$installer" ]] || { echo "OpenWrt eMMC installer not found: ${installer}" >&2; exit 1; }
+    if grep -Fq -- "$new_condition" "$installer"; then
+        echo "E900V22D eMMC layout is already present in ${installer}"
+        return
+    fi
+    [[ "$(grep -Fc -- "$old_condition" "$installer")" -eq 1 ]] || {
+        echo "Expected E900V22C eMMC layout condition not found exactly once: ${installer}" >&2
+        exit 1
+    }
+    sed -i 's#"${boxtype}" == "304" || "${boxtype}" == "34"#"${boxtype}" == "304" || "${boxtype}" == "308" || "${boxtype}" == "34"#' "$installer"
+    grep -Fq -- "$new_condition" "$installer" || {
+        echo "Failed to add E900V22D eMMC layout to ${installer}" >&2
+        exit 1
+    }
+    echo "Applied E900V22D 570 MiB eMMC layout to ${installer}"
+}
+
+[[ "$soc" == "s905l3a" ]] || exit 0
+
+case "$board" in
+    s905l3a-e900v22d)
+        profile="${project_dir}/profiles/e900v22d-rtl8822cs/profile.conf"
+        source_dtb="${boot_dir}/dtb/amlogic/meson-g12a-s905l3a-e900v22c.dtb"
+        dtb="${boot_dir}/dtb/amlogic/meson-g12a-s905l3a-e900v22d.dtb"
+        patch_e900v22d_installer
+        ;;
+    s905l3a-m401a)
+        profile="${project_dir}/profiles/m401a-rtl8822cs/profile.conf"
+        dtb="${boot_dir}/dtb/amlogic/meson-g12a-s905l3a-m401a.dtb"
+        ;;
+    *)
+        echo "No build-time S905L3A Wi-Fi profile for board: ${board}"
+        exit 0
+        ;;
+esac
+
+if [[ -n "${source_dtb:-}" ]]; then
+    [[ -r "$source_dtb" ]] || { echo "Source DTB not found: ${source_dtb}" >&2; exit 1; }
+    cp -- "$source_dtb" "$dtb"
+fi
+[[ -r "$dtb" ]] || { echo "Expected DTB not found: ${dtb}" >&2; exit 1; }
+candidate="${dtb}.wifi-fixed"
+"${script_dir}/patch-dtb" "$profile" "$dtb" "$candidate"
+mv -f -- "$candidate" "$dtb"
+echo "Applied S905L3A Wi-Fi profile to ${dtb}"

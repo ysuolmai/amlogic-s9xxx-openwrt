@@ -159,6 +159,7 @@ on:
           - s905l3-unt402a
           - s905l3a
           - s905l3a-cm311
+          - s905l3a-e900v22d
           - s905l3a-m401a
           - s905l3b
           - s905l3b-e900v21d
@@ -378,7 +379,7 @@ jobs:
           echo "build_tag=OpenWrt_imagebuilder_${RELEASES_BRANCH/:/_}_$(date +"%Y.%m")" >> ${GITHUB_ENV}
           # Create symbolic link for packaging
           [[ -d "/builder/openwrt" ]] || mkdir -p /builder/openwrt
-          ln -sf /builder/openwrt /home/runner/work/_actions/ophub/amlogic-s9xxx-openwrt/main/openwrt
+          ln -sf /builder/openwrt ${{ github.workspace }}/openwrt
           df -hT ${PWD}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
@@ -396,7 +397,7 @@ jobs:
 
       - name: Package OpenWrt for target boards
         if: ${{ steps.imagebuilder.outputs.status == 'success' && !cancelled() }}
-        uses: ophub/amlogic-s9xxx-openwrt@main
+        uses: ./
         with:
           openwrt_path: output/*rootfs.tar.gz
           openwrt_ip: ${{ inputs.openwrt_ip }}
