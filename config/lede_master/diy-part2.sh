@@ -114,7 +114,7 @@ UPDATE_PACKAGE() {
 UPDATE_PACKAGE "luci-app-amlogic" "ophub/luci-app-amlogic" "main"
 UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "main"
 UPDATE_PACKAGE "luci-theme-shadcn" "ysuolmai/luci-theme-shadcn" "main"
-UPDATE_PACKAGE "ddns-go luci-app-ddns-go" "sirpdboy/luci-app-ddns-go" "main" "pkg"
+UPDATE_PACKAGE "ddns-go luci-app-ddns-go" "ysuolmai/luci-app-ddns-go" "main" "pkg"
 UPDATE_PACKAGE "openlist2 luci-app-openlist2" "sbwml/luci-app-openlist2" "main" "pkg"
 UPDATE_PACKAGE "xray-core dns2socks geoview \
         chinadns-ng ipt2socks tcping frp luci-app-passwall \
@@ -346,17 +346,6 @@ for makefile in package/luci-app-quickstart/Makefile package/luci-app-store/Make
     [[ -f "$makefile" ]] || continue
     sed -i -E 's/PKG_VERSION:=([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)/PKG_VERSION:=\1\nPKG_RELEASE:=\2/' "$makefile"
 done
-
-# Replace ddns-go's incomplete service defaults with the known-good OpenWRT-CI
-# files so the daemon and LuCI use the same UCI section and config path.
-if [[ -d package/ddns-go/file ]]; then
-    install -Dm755 "${GITHUB_WORKSPACE}/diypatch/ddns-go.init" \
-        package/ddns-go/file/ddns-go.init
-    install -Dm755 "${GITHUB_WORKSPACE}/diypatch/ddns-go.uci-default" \
-        package/ddns-go/file/luci-ddns-go.uci-default
-    install -Dm644 "${GITHUB_WORKSPACE}/diypatch/ddns-go.config" \
-        package/base-files/files/etc/config/ddns-go
-fi
 
 # Old CMake projects need an explicit compatibility floor with current CMake.
 if ! grep -q 'CMAKE_POLICY_VERSION_MINIMUM' include/cmake.mk; then
