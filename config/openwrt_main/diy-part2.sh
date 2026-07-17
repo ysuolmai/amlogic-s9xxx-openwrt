@@ -110,14 +110,16 @@ UPDATE_PACKAGE() {
 
 UPDATE_PACKAGE "luci-app-amlogic" "ophub/luci-app-amlogic" "main"
 UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "main"
-UPDATE_PACKAGE "luci-theme-shadcn" "ysuolmai/luci-theme-shadcn" "main"
-UPDATE_PACKAGE "ddns-go luci-app-ddns-go" "ysuolmai/luci-app-ddns-go" "main" "pkg"
 UPDATE_PACKAGE "openlist2 luci-app-openlist2" "sbwml/luci-app-openlist2" "main" "pkg"
 
 # Packages required by the enabled PassWall, FRP and vlmcsd configuration.
-UPDATE_PACKAGE "xray-core dns2socks geoview chinadns-ng ipt2socks tcping frp \
+UPDATE_PACKAGE "xray-core dns2socks geoview chinadns-ng ipt2socks tcping \
         luci-app-passwall \
         luci-app-vlmcsd vlmcsd" "kenzok8/jell" "main" "pkg"
+
+UPDATE_PACKAGE "frp luci-app-frpc luci-app-frps ddns-go luci-app-ddns-go \
+        luci-app-adguardhome luci-theme-shadcn luci-app-homeproxy" \
+        "ysuolmai/openwrt-packages" "main"
 
 # vlmcsd-svn1113's GNUmakefile conflicts with OpenWrt's ccache compiler wrapper:
 # it can pass multiple sources to one "-c -o" command. Use the real compiler
@@ -171,27 +173,7 @@ fi
 # tcping's upstream Makefile otherwise uses the x86_64 host strip on AArch64 output.
 sed -i 's/CC="$(TARGET_CC)" CFLAGS=/CC="$(TARGET_CC)" STRIP="$(TARGET_CROSS)strip" CFLAGS=/' package/tcping/Makefile
 
-# The lightweight FRP package skips the Node.js web build; restore its OpenWrt service files.
-if ! grep -q 'files/$(2).init' package/frp/Makefile; then
-    sed -i '/$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)\/$(2) $(1)\/usr\/bin\//a \
-\	$(INSTALL_DIR) $(1)/etc/init.d/\
-\	$(INSTALL_BIN) ./files/$(2).init $(1)/etc/init.d/$(2)\
-\	$(INSTALL_DIR) $(1)/etc/config/\
-\	$(INSTALL_CONF) ./files/$(2).config $(1)/etc/config/$(2)' package/frp/Makefile
-fi
-for init_file in package/frp/files/frpc.init package/frp/files/frps.init; do
-    if [[ -f "$init_file" ]] && ! grep -q 'mkdir -p /var/etc' "$init_file"; then
-        sed -i '/local conf_file="\/var\/etc\/$NAME.ini"/a \	mkdir -p /var/etc' "$init_file"
-    fi
-done
-for config_file in package/frp/files/frpc.config package/frp/files/frps.config; do
-    [[ -f "$config_file" ]] || continue
-    sed -i 's/option user frpc/option user root/g; s/option group frpc/option group root/g; s/option user frps/option user root/g; s/option group frps/option group root/g' "$config_file"
-done
-
 UPDATE_PACKAGE "luci-app-netspeedtest speedtest-cli" "sbwml/openwrt_pkgs" "main" "pkg"
-
-UPDATE_PACKAGE "luci-app-adguardhome" "https://github.com/ysuolmai/luci-app-adguardhome.git" "master"
 UPDATE_PACKAGE "luci-app-quickfile" "https://github.com/sbwml/luci-app-quickfile" "main"
 UPDATE_PACKAGE "luci-app-diskman" "lisaac/luci-app-diskman" "master" "pkg"
 # Keep diskman's frontend and parted backend aligned with the maintained source.
