@@ -116,7 +116,8 @@ UPDATE_PACKAGE "xray-core dns2socks geoview chinadns-ng ipt2socks tcping \
         luci-app-vlmcsd vlmcsd" "kenzok8/jell" "main" "pkg"
 
 UPDATE_PACKAGE "frp luci-app-frpc luci-app-frps ddns-go luci-app-ddns-go \
-        luci-app-adguardhome luci-theme-shadcn sing-box luci-app-homeproxy" \
+        luci-app-adguardhome luci-theme-shadcn sing-box luci-app-homeproxy \
+        moontvplus luci-app-moontvplus" \
         "ysuolmai/openwrt-packages" "main"
 
 # vlmcsd-svn1113's GNUmakefile conflicts with OpenWrt's ccache compiler wrapper:
@@ -225,6 +226,8 @@ provided_config_lines=(
     "CONFIG_PACKAGE_luci-i18n-homeproxy-zh-cn=y"
     "CONFIG_PACKAGE_luci-app-ddns-go=y"
     "CONFIG_PACKAGE_luci-i18n-ddns-go-zh-cn=y"
+    "CONFIG_PACKAGE_moontvplus=y"
+    "CONFIG_PACKAGE_luci-app-moontvplus=y"
     "CONFIG_PACKAGE_luci-theme-shadcn=y"
     "CONFIG_PACKAGE_nano=y"
     "CONFIG_BUSYBOX_CONFIG_LSUSB=n"
