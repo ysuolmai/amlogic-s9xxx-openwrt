@@ -116,7 +116,7 @@ UPDATE_PACKAGE "xray-core dns2socks geoview chinadns-ng ipt2socks tcping \
         luci-app-vlmcsd vlmcsd" "kenzok8/jell" "main" "pkg"
 
 UPDATE_PACKAGE "frp luci-app-frpc luci-app-frps ddns-go luci-app-ddns-go \
-        luci-app-adguardhome luci-theme-shadcn luci-app-homeproxy" \
+        luci-app-adguardhome luci-theme-shadcn sing-box luci-app-homeproxy" \
         "ysuolmai/openwrt-packages" "main"
 
 # vlmcsd-svn1113's GNUmakefile conflicts with OpenWrt's ccache compiler wrapper:
