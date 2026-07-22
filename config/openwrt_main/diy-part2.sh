@@ -117,7 +117,7 @@ UPDATE_PACKAGE "xray-core dns2socks geoview chinadns-ng ipt2socks tcping \
         luci-app-passwall \
         luci-app-vlmcsd vlmcsd" "kenzok8/jell" "main" "pkg"
 
-UPDATE_PACKAGE "frp luci-app-frpc luci-app-frps ddns-go luci-app-ddns-go \
+UPDATE_PACKAGE "frp luci-app-frp ddns-go luci-app-ddns-go \
         luci-app-adguardhome luci-theme-shadcn sing-box luci-app-homeproxy \
         moontvplus luci-app-moontvplus" \
         "ysuolmai/openwrt-packages" "main"
@@ -238,7 +238,7 @@ provided_config_lines=(
     "CONFIG_COREMARK_NUMBER_OF_THREADS=6"
     "CONFIG_PACKAGE_luci-app-filetransfer=y"
     "CONFIG_PACKAGE_openssh-sftp-server=y"
-    "CONFIG_PACKAGE_luci-app-frpc=y"
+    "CONFIG_PACKAGE_luci-app-frp=y"
     "CONFIG_OPKG_USE_CURL=y"
     "CONFIG_PACKAGE_opkg=y"
     "# CONFIG_USE_APK is not set"
@@ -293,7 +293,6 @@ provided_config_lines=(
     "CONFIG_PACKAGE_kmod-dummy=y"
     "CONFIG_PACKAGE_kmod-veth=y"
     "CONFIG_PACKAGE_automount=y"
-    "CONFIG_PACKAGE_luci-app-frps=y"
     "CONFIG_PACKAGE_luci-app-samba4=y"
     "CONFIG_PACKAGE_luci-app-quickfile=y"
 )
