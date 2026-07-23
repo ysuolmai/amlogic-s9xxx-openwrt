@@ -117,7 +117,7 @@ UPDATE_PACKAGE "xray-core dns2socks geoview chinadns-ng ipt2socks tcping \
 
 UPDATE_PACKAGE "frp luci-app-frp ddns-go luci-app-ddns-go \
         luci-app-adguardhome luci-theme-shadcn sing-box luci-app-homeproxy \
-        moontvplus luci-app-moontvplus" \
+        moontvplus luci-app-moontvplus dockerd luci-app-dockerman" \
         "ysuolmai/openwrt-packages" "main"
 
 # vlmcsd-svn1113's GNUmakefile conflicts with OpenWrt's ccache compiler wrapper:
@@ -247,8 +247,10 @@ provided_config_lines=(
     "CONFIG_PACKAGE_docker=y"
     "CONFIG_PACKAGE_dockerd=y"
     "CONFIG_PACKAGE_docker-compose=y"
-    "CONFIG_PACKAGE_luci-app-docker=y"
-    "CONFIG_PACKAGE_luci-i18n-docker-zh-cn=y"
+    # luci-app-docker installs a competing S25docker service which starts
+    # dockerd without the maintained daemon configuration.
+    "CONFIG_PACKAGE_luci-app-docker=n"
+    "CONFIG_PACKAGE_luci-i18n-docker-zh-cn=n"
     "CONFIG_PACKAGE_luci-app-dockerman=y"
     "CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=y"
     "CONFIG_PACKAGE_luci-app-openlist2=y"
@@ -361,13 +363,14 @@ if [[ -f "$RUST_FILE" ]]; then
     fi
 fi
 
-# Use dockerman and luci-lib-docker from their maintained repositories and
-# remove the obsolete cgroupfs-mount dependency.
+# Use the native nftables Dockerman from the maintained package collection and
+# keep luci-lib-docker aligned with its upstream.
 rm -rf package/feeds/luci/luci-app-dockerman package/feeds/luci/luci-lib-docker \
     package/luci-app-dockerman package/luci-lib-docker
-git clone --depth=1 https://github.com/lisaac/luci-app-dockerman.git package/.diy-dockerman || exit 1
-mv package/.diy-dockerman/applications/luci-app-dockerman package/luci-app-dockerman || exit 1
-rm -rf package/.diy-dockerman
+if [[ ! -f package/openwrt-packages/luci-app-dockerman/Makefile ]]; then
+    echo "Error: maintained luci-app-dockerman was not found."
+    exit 1
+fi
 git clone --depth=1 https://github.com/lisaac/luci-lib-docker.git package/.diy-libdocker || exit 1
 if [[ -d package/.diy-libdocker/collections/luci-lib-docker ]]; then
     mv package/.diy-libdocker/collections/luci-lib-docker package/luci-lib-docker || exit 1
@@ -375,7 +378,6 @@ else
     mv package/.diy-libdocker package/luci-lib-docker || exit 1
 fi
 rm -rf package/.diy-libdocker
-sed -i 's/+cgroupfs-mount //g; s/+cgroupfs-mount//g' package/luci-app-dockerman/Makefile
 ./scripts/feeds install luci-lib-docker || exit 1
 
 # The feed recipes can lag Docker's retagged release sources. Resolve the
