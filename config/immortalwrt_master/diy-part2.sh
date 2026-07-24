@@ -312,6 +312,7 @@ find ./feeds/luci/ -type f -name "Makefile" -exec sed -i "s/luci-theme-[^[:space
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_ttyd-nopass.sh" "package/base-files/files/etc/uci-defaults/99_ttyd-nopass"
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_set_shadcn_theme.sh" "package/base-files/files/etc/uci-defaults/99_set_shadcn_theme"
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/98_zerotier_tailscale_coexist.sh" "package/base-files/files/etc/uci-defaults/98_zerotier_tailscale_coexist"
+install -Dm644 "${GITHUB_WORKSPACE}/diypatch/vpn-overlay-isolation.nft" "package/base-files/files/usr/share/nftables.d/ruleset-post/vpn-overlay-isolation.nft"
 install -Dm644 "${GITHUB_WORKSPACE}/diypatch/zerotier.local.conf" "package/base-files/files/etc/zerotier.local.conf"
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99-distfeeds.conf" "package/emortal/default-settings/files/99-distfeeds.conf"
 
