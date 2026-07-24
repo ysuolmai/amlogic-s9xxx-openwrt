@@ -311,6 +311,8 @@ find ./feeds/luci/ -type f -name "Makefile" -exec sed -i "s/luci-theme-[^[:space
 # Apply persistent UI and login defaults.
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_ttyd-nopass.sh" "package/base-files/files/etc/uci-defaults/99_ttyd-nopass"
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99_set_shadcn_theme.sh" "package/base-files/files/etc/uci-defaults/99_set_shadcn_theme"
+install -Dm755 "${GITHUB_WORKSPACE}/diypatch/98_zerotier_tailscale_coexist.sh" "package/base-files/files/etc/uci-defaults/98_zerotier_tailscale_coexist"
+install -Dm644 "${GITHUB_WORKSPACE}/diypatch/zerotier.local.conf" "package/base-files/files/etc/zerotier.local.conf"
 install -Dm755 "${GITHUB_WORKSPACE}/diypatch/99-distfeeds.conf" "package/emortal/default-settings/files/99-distfeeds.conf"
 
 sed -i "/define Package\/default-settings\/install/a\\
