@@ -19,8 +19,8 @@ on:
         type: choice
         options:
           - openwrt:25.12.5
-          - openwrt:24.10.7
-          - immortalwrt:25.12.1
+          - openwrt:24.10.8
+          - immortalwrt:25.12.2
           - immortalwrt:24.10.6
       openwrt_board:
         description: "Select device board"
@@ -40,7 +40,7 @@ on:
           - range100_150
           - last50
           - a311d-oes_s922x-oes-plus_wxy-oect
-          - nsy-g16-plus_nsy-g68-plus_bdy-g18-pro
+          - nsy-g16-plus_nsy-g68-plus_bdy-g18-pro_bdy-g98
           - s905d_s905x3_s912_s922x-ct2000
           - a311d
           - a311d-oes
@@ -51,6 +51,7 @@ on:
           - aio-3399c-ai
           - bdkj-bd-one
           - bdy-g18-pro
+          - bdy-g98
           - beikeyun
           - boca-tcn100
           - boca-tcn200
@@ -70,6 +71,7 @@ on:
           - eaidk-610
           - easepi-a2
           - easepi-r2
+          - elfboard-elf2
           - emb3531
           - fine3399
           - firefly-itx-3588j
@@ -80,6 +82,8 @@ on:
           - gea-6319
           - gzpeite-p01
           - h28k
+          - h339pc
+          - h618-ai-douhe
           - h618-devboard
           - h66k
           - h68k
@@ -88,12 +92,14 @@ on:
           - h88k-v3
           - h96-max-m2
           - hk1-rbox-k8s
+          - houzzkit-f1
           - hs530r
           - ht2
           - hugsun-x99
           - indiedroid-nova
           - ipc-r
           - jp-tvbox
+          - kickpi-k11c-v12
           - king3399
           - kylin3399
           - lckfb-tspi
@@ -103,13 +109,16 @@ on:
           - lubancat-2
           - lubancat-3
           - lubancat-4
+          - lubancat-5
           - lx-r3s
           - lyt-t68m
           - lz-d3568
           - lz-d3588
           - lz-k3568
+          - lzk4
           - md1000
           - mrkaio-m68s
+          - mytv-net1
           - nanopc-t4
           - nanopc-t6
           - nanopi-m5
@@ -125,8 +134,10 @@ on:
           - orangepi-5b
           - orangepi-zero3
           - painet-p3
+          - painet-p5
           - panther-x2
           - photonicat
+          - quarkpi-ca2
           - r66s
           - r68s
           - recomputer-rk3576-devkit
@@ -134,6 +145,7 @@ on:
           - rk3318-box
           - roceos-k40pro
           - rock-5-itx
+          - rock-3a
           - rock-3b
           - rock-3c
           - rock5b
@@ -166,6 +178,7 @@ on:
           - s905l3b-e900v22d
           - s905l3b-e900v22e
           - s905l3b-ip103h
+          - s905l3b-m302a
           - s905l3b-rg020et-ca
           - s905l3b-unt403a
           - s905lb-ipbs9505
@@ -183,9 +196,11 @@ on:
           - s905x-tbee
           - s905x-tx9
           - s905x2
+          - s905x2-b860h-v5
           - s905x2-km3
           - s905x2-x96max-2g
           - s905x2-hg680fj
+          - s905x2-w103d
           - s905x3
           - s905x3-2101
           - s905x3-a100
@@ -238,11 +253,14 @@ on:
           - sv-33a6x-vpu
           - swan1-w28
           - sw799
+          - sz3390
           - taram
           - tanix-tx6
           - tb-ls3399
           - tn3399
+          - torder-r10d
           - tpm312
+          - tps781
           - tqc-a01
           - tvi3315a
           - vontar-h618
@@ -253,10 +271,16 @@ on:
           - x88pro13
           - x88pro20
           - x98h
+          - x98h-100mb
           - xiaobao
+          - xingyicloud
+          - youyeetoo-r1-v3
+          - youyeetoo-yy3568
+          - youyeetoo-yy3588
           - yskj
           - zcube1-max
           - zk-r39a
+          - ztl-a568
           - zysj
       openwrt_kernel:
         description: "Select kernel version"
