@@ -344,14 +344,17 @@ fi
 RUST_FILE="$(find feeds/packages -maxdepth 3 -type f -wholename '*/rust/Makefile' | head -n 1)"
 if [[ -f "$RUST_FILE" ]]; then
     sed -i 's/ci-llvm=true/ci-llvm=false/g' "$RUST_FILE"
-    if ! patch --batch --forward "$RUST_FILE" "${GITHUB_WORKSPACE}/diypatch/rust-makefile.patch"; then
-        if grep -q '^define Host/Patch' "$RUST_FILE" && ! grep -q -- '--ci false' "$RUST_FILE"; then
-            echo "Rust host-build fixes are already present upstream."
-            rm -f "${RUST_FILE}.orig" "${RUST_FILE}.rej"
-        else
-            echo "Error: failed to apply the Rust host-build patch."
-            exit 1
-        fi
+    if grep -q '^define Host/Patch' "$RUST_FILE" && ! grep -q -- '--ci false' "$RUST_FILE"; then
+        echo "Rust host-build fixes are already present upstream."
+    elif patch --batch --forward "$RUST_FILE" "${GITHUB_WORKSPACE}/diypatch/rust-makefile.patch"; then
+        rm -f "${RUST_FILE}.orig" "${RUST_FILE}.rej"
+    elif grep -q '^define Host/Patch' "$RUST_FILE"; then
+        sed -i '/--ci false \\/d' "$RUST_FILE"
+        rm -f "${RUST_FILE}.orig" "${RUST_FILE}.rej"
+        echo "Rust host-build patch applied with current Makefile context."
+    else
+        echo "Error: failed to apply the Rust host-build patch."
+        exit 1
     fi
 fi
 
